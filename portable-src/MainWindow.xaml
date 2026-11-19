@@ -1,0 +1,38 @@
+<Window x:Class="TakobotoApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Takoboto" Width="1180" Height="760" MinWidth="900" MinHeight="560"
+        Background="{DynamicResource PageBg}" Foreground="{DynamicResource Fg}"
+        FontFamily="Segoe UI, Yu Gothic UI, Meiryo UI" FontSize="15"
+        UseLayoutRounding="True" SnapsToDevicePixels="True" TextOptions.TextFormattingMode="Ideal">
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="220"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+
+    <!-- sidebar -->
+    <Border Background="{DynamicResource SidebarBg}">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="20,22,12,22">
+          <Image x:Name="Logo" Width="36" Height="36" RenderOptions.BitmapScalingMode="HighQuality"/>
+          <TextBlock Text="Takoboto" FontSize="23" FontWeight="SemiBold" Foreground="{DynamicResource SidebarFg}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+        </StackPanel>
+        <StackPanel DockPanel.Dock="Bottom" Margin="0,0,0,14">
+          <RadioButton x:Name="NavSettings" Style="{StaticResource NavItem}" Tag="&#xE713;" Content="Settings" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>
+          <RadioButton x:Name="NavAbout" Style="{StaticResource NavItem}" Tag="&#xE946;" Content="About" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>
+        </StackPanel>
+        <StackPanel>
+          <RadioButton x:Name="NavSearch" Style="{StaticResource NavItem}" Tag="&#xE721;" Content="Search" GroupName="nav" IsChecked="True" Checked="Nav_Changed" Click="Nav_Changed"/>
+          <RadioButton x:Name="NavHistory" Style="{StaticResource NavItem}" Tag="&#xE81C;" Content="History" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>
+          <RadioButton x:Name="NavFavorites" Style="{StaticResource NavItem}" Tag="&#xE734;" Content="Favorites" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>
+          <RadioButton x:Name="NavLists" Style="{StaticResource NavItem}" Tag="&#xE14C;" Content="My lists" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>
+          <RadioButton x:Name="NavKanji" Style="{StaticResource NavItem}" Tag="&#xE80A;" Content="Kanji by radicals" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <!-- pages are added here by code -->
+    <Grid x:Name="Host" Grid.Column="1"/>
+  </Grid>
+</Window>

@@ -1,0 +1,23 @@
+# Only our OWN work goes to GitHub. Everything at the top level is ignored unless it is allowed below.
+/*
+!/.gitignore
+!/README.md
+!/portable-src/
+!/tools/
+
+# --- tools: only the scripts that belong to the portable program ---
+/tools/*
+!/tools/build-portable.ps1
+!/tools/prepare-from-original.ps1
+!/tools/make_icons.ps1
+!/tools/make_ico.ps1
+!/tools/recolor.ps1
+!/tools/shot.ps1
+!/tools/runshot.ps1
+!/tools/drive.ps1
+
+# --- portable-src: no build output, and NOTHING that belongs to the author of Takoboto ---
+/portable-src/bin/
+/portable-src/obj/
+/portable-src/Assets/*
+/portable-src/app.ico
