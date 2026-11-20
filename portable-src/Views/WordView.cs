@@ -593,6 +593,17 @@ namespace TakobotoApp
         // links: click -> preview pop-up. With furigana on, the kanji of those words get their reading above them.
         static readonly Dictionary<char, string> onReadingCache = new Dictionary<char, string>();
 
+        static readonly Dictionary<char, string> kunReadingCache = new Dictionary<char, string>();
+
+        static string KunReadingOf(char c)
+        {
+            string r;
+            if (kunReadingCache.TryGetValue(c, out r)) return r;
+            try { var k = Engine.Kanji(c); r = k != null ? (k.KunReading ?? "") : ""; } catch { r = ""; }
+            kunReadingCache[c] = r;
+            return r;
+        }
+
         static string OnReadingOf(char c)
         {
             string r;
@@ -608,7 +619,7 @@ namespace TakobotoApp
             string text = s.MainText ?? "";
             bool furigana = Store.Settings.Furigana;
             int cursor = 0;
-            foreach (var m in SentenceRuby.Analyze(text, s.Parts, OnReadingOf))
+            foreach (var m in SentenceRuby.Analyze(text, s.Parts, OnReadingOf, KunReadingOf))
             {
                 if (m.Start > cursor) box.Inlines.Add(new Run(text.Substring(cursor, m.Start - cursor)));
                 var run = (Run)WordLink(text.Substring(m.Start, m.Length), m.Part);

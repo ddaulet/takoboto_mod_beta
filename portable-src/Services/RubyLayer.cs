@@ -54,32 +54,41 @@ namespace TakobotoApp
             {
                 try
                 {
-                    // the rectangle of every kanji of the run
-                    var rects = new List<Rect>();
+                    // where every kanji of the run stands. The rectangle GetCharacterRect gives has NO width (it is where the caret
+                    // would be), so the right edge is the left edge of the next character on the same line, or one em for a kanji.
                     var start = item.Run.ContentStart.GetPositionAtOffset(item.Offset, LogicalDirection.Forward);
+                    if (start == null) continue;
+                    Rect first = start.GetCharacterRect(LogicalDirection.Forward);
+                    if (first.IsEmpty) continue;
+                    double top = first.Top;
+                    double x0 = first.Left, x1 = first.Left;
                     for (int k = 0; k < item.Length; k++)
                     {
-                        var p = start != null ? start.GetPositionAtOffset(k, LogicalDirection.Forward) : null;
-                        if (p == null) break;
-                        var r = p.GetCharacterRect(LogicalDirection.Forward);
-                        if (r.IsEmpty) break;
-                        rects.Add(r);
+                        var p = start.GetPositionAtOffset(k, LogicalDirection.Forward);
+                        var r = p != null ? p.GetCharacterRect(LogicalDirection.Forward) : Rect.Empty;
+                        if (r.IsEmpty || Math.Abs(r.Top - top) > 4) break;   // a word that wraps: the reading goes over the part on the first line
+                        var pn = p.GetPositionAtOffset(1, LogicalDirection.Forward);
+                        var rn = pn != null ? pn.GetCharacterRect(LogicalDirection.Forward) : Rect.Empty;
+                        double right = !rn.IsEmpty && Math.Abs(rn.Top - top) < 4 && rn.Left > r.Left ? rn.Left : r.Left + source.FontSize;
+                        x1 = Math.Max(x1, right);
                     }
-                    if (rects.Count == 0) continue;
+                    double center = (x0 + x1) / 2, width = x1 - x0;
 
-                    // a word that wraps onto the next line: the reading goes over the part on the first line
-                    double top = rects[0].Top;
-                    var line = rects.Where(r => Math.Abs(r.Top - top) < 4).ToList();
-                    double x0 = line.Min(r => r.Left), x1 = line.Max(r => r.Right);
-
+                    // the reading, no wider than the kanji it belongs to plus a little (a long reading is made smaller)
                     double size = ReadingSize;
                     FormattedText ft = Text(item.Reading, size, brush);
-                    // a long reading over few kanji: make it smaller instead of letting it run into the neighbours
-                    double room = Math.Max(x1 - x0, 12) * 1.6;
-                    if (ft.Width > room) { size = Math.Max(7, size * room / ft.Width); ft = Text(item.Reading, size, brush); }
+                    double room = item.Length == 1 ? width + 4 : width * 1.2;
+                    if (ft.Width > room) { size = Math.Max(6.5, size * room / ft.Width); ft = Text(item.Reading, size, brush); }
 
-                    double x = (x0 + x1) / 2 - ft.Width / 2;
-                    if (Math.Abs(top - prevTop) < 4 && x < prevRight + 1) x = prevRight + 1;   // do not touch the reading before
+                    // it must not run into the reading before it: first make it smaller, then push it aside
+                    if (Math.Abs(top - prevTop) < 4 && center - ft.Width / 2 < prevRight + 0.5)
+                    {
+                        double avail = (center - prevRight - 0.5) * 2;
+                        if (avail >= 8 && avail < ft.Width) { size = Math.Max(6.5, size * avail / ft.Width); ft = Text(item.Reading, size, brush); }
+                    }
+                    double x = center - ft.Width / 2;
+                    if (Math.Abs(top - prevTop) < 4 && x < prevRight + 0.5) x = prevRight + 0.5;
+
                     // the reading sits in the room above the line's text: its baseline a pixel above where the ink of the kanji starts
                     double y = top + source.InkTop - 1.0 - ft.Baseline;
                     dc.DrawText(ft, new Point(x, y));

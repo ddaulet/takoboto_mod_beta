@@ -72,7 +72,7 @@ namespace TakobotoApp
         /// <summary>The words of the sentence, in text order, with their furigana.
         /// <paramref name="onReadings"/> gives the on-readings of a kanji (katakana, comma separated); it is used to tell a
         /// lone kanji that is the tail of a compound (犯罪|人 にん) from a wrong "word" the dictionary analysis made of it (人 ひと).</summary>
-        public static List<WordMatch> Analyze(string text, IList<SentencePart> parts, Func<char, string> onReadings = null)
+        public static List<WordMatch> Analyze(string text, IList<SentencePart> parts, Func<char, string> onReadings = null, Func<char, string> kunReadings = null)
         {
             var result = new List<WordMatch>();
             text = text ?? "";
@@ -112,7 +112,7 @@ namespace TakobotoApp
                     if (loneAfterKanji && !(onReadings != null && OnReadingMatches(onReadings(w[0]), hira)))
                         { /* no furigana */ }
                     else
-                        m.Ruby = Furigana(w, hira, len, m.Conjugated, before, at);
+                        m.Ruby = Furigana(w, hira, len, m.Conjugated, before, at, onReadings, kunReadings);
                 }
                 result.Add(m);
                 cursor = at + len;
@@ -123,7 +123,7 @@ namespace TakobotoApp
         // ---- furigana of one word ---------------------------------------------------------------------------------------
         class Seg { public int Start, Length; public bool Kanji; }
 
-        static List<RubyPiece> Furigana(string w, string reading, int matched, bool conjugated, char before, int textStart)
+        static List<RubyPiece> Furigana(string w, string reading, int matched, bool conjugated, char before, int textStart, Func<char, string> on, Func<char, string> kun)
         {
             var none = new List<RubyPiece>();
             // readings that change when the word is conjugated: the dictionary reading would be WRONG for the text
@@ -155,9 +155,103 @@ namespace TakobotoApp
             {
                 if (!segs[i].Kanji) continue;
                 if (segs[i].Start + segs[i].Length > matched) continue;        // the word is cut inside this kanji run
-                pieces.Add(new RubyPiece { Offset = textStart + segs[i].Start, Length = segs[i].Length, Reading = assign[i] });
+                // the reading above EACH kanji, when it can be told which part of the reading belongs to which kanji
+                var each = SplitReading(w.Substring(segs[i].Start, segs[i].Length), assign[i], on, kun);
+                if (each != null)
+                    for (int j = 0; j < each.Length; j++)
+                        pieces.Add(new RubyPiece { Offset = textStart + segs[i].Start + j, Length = 1, Reading = each[j] });
+                else   // one reading over the whole run (the reading of a word like 今日 きょう belongs to both kanji)
+                    pieces.Add(new RubyPiece { Offset = textStart + segs[i].Start, Length = segs[i].Length, Reading = assign[i] });
             }
             return pieces;
+        }
+
+        // ---- which part of a word's reading belongs to which kanji --------------------------------------------------
+        // 学校 がっこう -> 学 = がっ, 校 = こう: every way to cut the reading into one part per kanji is tried, and a way counts only
+        // when each part is a reading the kanji really has (KANJIDIC on / kun readings), allowing what Japanese does to readings
+        // inside words: the first kana gets voiced (ほん -> ぼん: rendaku) and the last kana turns into っ (がく -> がっ). The cut
+        // must be the only one with the best score; otherwise (jukujikun like 今日 きょう, unknown readings) NOT cut: one reading
+        // over the whole word.
+        static string[] SplitReading(string kanji, string reading, Func<char, string> on, Func<char, string> kun)
+        {
+            int n = kanji.Length;
+            if (n < 2 || n > 6 || reading.Length < n || on == null || kun == null) return null;
+            var forms = new List<string>[n];
+            for (int i = 0; i < n; i++)
+            {
+                char c = kanji[i] == '々' && i > 0 ? kanji[i - 1] : kanji[i];   // 々 repeats the kanji before it
+                forms[i] = FormsOf(on(c), kun(c));
+                if (forms[i].Count == 0) return null;                                  // a kanji we know nothing about
+            }
+            string[] best = null; int bestScore = -1; int bestCount = 0;
+            var cur = new string[n];
+            Action<int, int, int> rec = null;
+            rec = (i, pos, score) =>
+            {
+                if (i == n)
+                {
+                    if (pos != reading.Length) return;
+                    if (score > bestScore) { bestScore = score; best = (string[])cur.Clone(); bestCount = 1; }
+                    else if (score == bestScore) bestCount++;
+                    return;
+                }
+                int maxLen = reading.Length - pos - (n - 1 - i);   // leave at least one kana for each kanji still to come
+                for (int len = 1; len <= maxLen; len++)
+                {
+                    string part = reading.Substring(pos, len);
+                    int c = Compatibility(forms[i], part, i > 0);
+                    if (c == 0) continue;
+                    cur[i] = part;
+                    rec(i + 1, pos + len, score + c);
+                }
+            };
+            rec(0, 0, 0);
+            return bestCount == 1 ? best : null;
+        }
+
+        // 2 = the part is one of the kanji's readings as it stands, 1 = it is one after rendaku / sokuon, 0 = it is none
+        static int Compatibility(List<string> forms, string part, bool mayBeVoiced)
+        {
+            if (forms.Contains(part)) return 2;
+            foreach (var f in forms)
+            {
+                if (mayBeVoiced && f.Length > 0)
+                    foreach (char v in Voicings(f[0]))
+                        if (v + f.Substring(1) == part) return 1;
+                if (f.Length > 1 && "くきちつふ".IndexOf(f[f.Length - 1]) >= 0)       // く き ち つ ふ at the end -> っ
+                {
+                    string s = f.Substring(0, f.Length - 1) + "っ";
+                    if (s == part) return 1;
+                    if (mayBeVoiced)
+                        foreach (char v in Voicings(s[0]))
+                            if (v + s.Substring(1) == part) return 1;
+                }
+            }
+            return 0;
+        }
+
+        static IEnumerable<char> Voicings(char c)
+        {
+            int i = "かきくけこさしすせそたちつてとはひふへほ".IndexOf(c);
+            if (i < 0) yield break;
+            yield return "がぎぐげござじずぜぞだぢづでどばびぶべぼ"[i];   // voiced
+            if (i >= 15) yield return "ぱぴぷぺぽ"[i - 15];                                                                          // semi-voiced (は行)
+        }
+
+        // the readings of a kanji as hiragana: on-readings, kun-readings (with and without the okurigana: た.べる -> た)
+        static List<string> FormsOf(string on, string kun)
+        {
+            var forms = new List<string>();
+            Action<string> add = s => { s = ToHiragana(s ?? "").Replace("-", "").Replace(".", "").Trim(); if (s.Length > 0 && !forms.Contains(s)) forms.Add(s); };
+            foreach (var r in (on ?? "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)) add(r);
+            foreach (var r0 in (kun ?? "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                string r = r0.Trim().TrimStart('-');
+                int dot = r.IndexOf('.');
+                add(dot > 0 ? r.Substring(0, dot) : r);     // the stem
+                add(r);                                     // the whole (dots removed)
+            }
+            return forms;
         }
 
         static bool OnReadingMatches(string onReadings, string hiraganaReading)
