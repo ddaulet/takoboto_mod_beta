@@ -30,7 +30,6 @@ namespace TakobotoApp
         }
 
         public event Action<string> KanjiChosen;   // a click on a kanji: it goes into the search box at once
-        public event Action BackspaceRequested;    // the backspace button: delete the last character of the search box
         public event Action DoneRequested;         // DONE: close the panel, show the results
 
         readonly List<Tile> tiles = new List<Tile>();
@@ -47,9 +46,9 @@ namespace TakobotoApp
             root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(2, GridUnitType.Star), MinHeight = 120 });    // the kanji
             root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(3, GridUnitType.Star), MinHeight = 140 });    // the radicals
 
-            // row 0: the bar - backspace | the radicals picked so far (one row, a click on one takes it off again) | DONE
+            // row 0: the bar - the radicals picked so far (one row, a click on one takes it off again) | X (clear) | done
             var bar = new ModeBar(strip);
-            bar.BackspacePressed += () => { if (BackspaceRequested != null) BackspaceRequested(); };
+            bar.ClearPressed += () => ClearSelection();   // the round X: take all the picked radicals off
             bar.DonePressed += () => { if (DoneRequested != null) DoneRequested(); };
             root.Children.Add(bar);
 

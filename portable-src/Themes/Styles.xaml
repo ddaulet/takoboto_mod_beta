@@ -356,6 +356,27 @@
     </Setter>
   </Style>
 
+  <!-- the same, filled with the accent colour (the green "done" check) -->
+  <Style x:Key="RoundAccentButton" TargetType="Button">
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Focusable" Value="False"/>
+    <Setter Property="Width" Value="44"/>
+    <Setter Property="Height" Value="44"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Bd" CornerRadius="22" Background="{DynamicResource AccentFill}">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Opacity" Value="0.85"/></Trigger>
+            <Trigger Property="IsPressed" Value="True"><Setter TargetName="Bd" Property="Opacity" Value="0.7"/></Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
   <!-- ===== on-screen keyboard ===== -->
   <Style x:Key="KeyButton" TargetType="Button">
     <Setter Property="Foreground" Value="{DynamicResource Fg}"/>

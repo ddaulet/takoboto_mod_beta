@@ -46,12 +46,10 @@ namespace TakobotoApp
             PanelHost.Content = keyboard;
             picker = new RadicalPicker();
             picker.KanjiChosen += k => InsertRaw(k);   // a click on a kanji puts it into the search box at once
-            picker.BackspaceRequested += () => BackspaceKey();
             picker.DoneRequested += () => CloseModes();
             RadicalHost.Child = picker;
             writing = new HandwritingPanel();
             writing.KanjiChosen += k => InsertRaw(k);   // a click on a candidate puts it into the search box at once
-            writing.BackspaceRequested += () => BackspaceKey();
             writing.DoneRequested += () => CloseModes();
             HandwritingHost.Child = writing;
             List.ItemsSource = items;

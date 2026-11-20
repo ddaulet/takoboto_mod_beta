@@ -13,14 +13,13 @@ using System.Windows.Threading;
 namespace TakobotoApp
 {
     /// <summary>Handwriting input (the brush button of the search page). It fills the whole results area:
-    ///   top    - the bar: backspace | the candidates for what was written (ONE row, one character each, scrolls sideways) | DONE;
-    ///   below  - a round undo button on the right, and under it a square pad to write ONE kanji on with the mouse (or a pen).
+    ///   top    - the bar: the candidates for what was written (ONE row, one character each, scrolls sideways) | round X (clear the pad) | round green check (done);
+    ///   below  - a square pad to write ONE kanji on with the mouse (or a pen), with a round undo button in its top right corner.
     /// A click on a candidate puts it into the search box at once and clears the pad. The recognition is made by
     /// <see cref="Handwriting"/>. Nothing in the panel changes size while you write.</summary>
     public class HandwritingPanel : UserControl
     {
         public event Action<string> KanjiChosen;
-        public event Action BackspaceRequested;
         public event Action DoneRequested;
 
         readonly InkCanvas ink = new InkCanvas();
@@ -37,7 +36,6 @@ namespace TakobotoApp
         {
             var root = new Grid();
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
             // the bar; the only text that ever shows in it is the short "preparing" notice of the first use
@@ -48,16 +46,9 @@ namespace TakobotoApp
             band.Children.Add(loading);
             band.Children.Add(candidates);
             bar = new ModeBar(band);
-            bar.BackspacePressed += () => { if (BackspaceRequested != null) BackspaceRequested(); };
+            bar.ClearPressed += () => Clear();   // the round X: empty the pad
             bar.DonePressed += () => { if (DoneRequested != null) DoneRequested(); };
             root.Children.Add(bar);
-
-            // undo the last stroke: a round button above the pad, on the right (outside the writing area)
-            undo = new Button { Style = (Style)Application.Current.FindResource("RoundIconButton"), Content = "", HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 10, 16, 0), ToolTip = "Undo the last stroke", IsEnabled = false };
-            System.Windows.Automation.AutomationProperties.SetName(undo, "Undo the last stroke");
-            undo.Click += (s, e) => { if (ink.Strokes.Count > 0) { ink.Strokes.RemoveAt(ink.Strokes.Count - 1); Schedule(); } };
-            Grid.SetRow(undo, 1);
-            root.Children.Add(undo);
 
             // the pad: square, as big as the room allows; nothing is drawn over it
             pad = new Border { CornerRadius = new CornerRadius(10), BorderThickness = new Thickness(1), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top, Width = 300, Height = 300, ClipToBounds = true };
@@ -76,16 +67,22 @@ namespace TakobotoApp
             ink.Strokes.StrokesChanged += (s, e) => undo.IsEnabled = ink.Strokes.Count > 0;
             ink.PreviewMouseRightButtonUp += (s, e) => { Clear(); e.Handled = true; };   // a right click clears
             padGrid.Children.Add(ink);
+
+            // undo the last stroke: a round button in the top right corner of the pad
+            undo = new Button { Style = (Style)Application.Current.FindResource("RoundIconButton"), Content = Icons.Make(Icons.Undo, 18, "Fg"), Width = 40, Height = 40, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 8, 8, 0), ToolTip = "Undo the last stroke", IsEnabled = false };
+            System.Windows.Automation.AutomationProperties.SetName(undo, "Undo the last stroke");
+            undo.Click += (s, e) => { if (ink.Strokes.Count > 0) { ink.Strokes.RemoveAt(ink.Strokes.Count - 1); Schedule(); } };
+            padGrid.Children.Add(undo);
             pad.Child = padGrid;
 
-            padHost = new Grid { Margin = new Thickness(16, 8, 16, 14) };
+            padHost = new Grid { Margin = new Thickness(16, 14, 16, 14) };
             padHost.Children.Add(pad);
             padHost.SizeChanged += (s, e) =>
             {
                 double side = Math.Max(120, Math.Min(padHost.ActualWidth, padHost.ActualHeight));
                 pad.Width = side; pad.Height = side;
             };
-            Grid.SetRow(padHost, 2);
+            Grid.SetRow(padHost, 1);
             root.Children.Add(padHost);
             Content = root;
 
