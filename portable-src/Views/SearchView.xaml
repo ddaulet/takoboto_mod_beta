@@ -56,8 +56,8 @@
         <StackPanel x:Name="Hint" Margin="22,16,20,0" VerticalAlignment="Top">
           <TextBlock Text="Type a word to start." FontSize="18" Foreground="{DynamicResource Fg}" Margin="0,0,0,6"/>
           <TextBlock TextWrapping="Wrap" FontSize="14.5" Foreground="{DynamicResource FgMuted}" Margin="0,0,0,14"
-                     Text="Japanese in kanji, kana or romaji, or a word in English, French, German or Russian. Conjugated verbs and adjectives are recognised too."/>
-          <TextBlock Text="Try:" FontSize="13.5" Foreground="{DynamicResource FgFaint}" Margin="0,0,0,2"/>
+                     Text="Japanese in kanji, kana or romaji, or a word in English, French, German or Russian. Conjugated Japanese verbs and adjectives are recognised too."/>
+          <TextBlock Text="Try some common words:" FontSize="13.5" Foreground="{DynamicResource FgFaint}" Margin="0,0,0,2"/>
           <WrapPanel x:Name="Examples"/>
         </StackPanel>
 

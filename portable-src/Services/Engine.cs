@@ -170,7 +170,7 @@ namespace TakobotoApp
         public static WordTag Lookup(string text, string reading = null)
         {
             if (string.IsNullOrWhiteSpace(text)) return null;
-            var r = SearchRaw(text.Trim(), 8);
+            var r = SearchRaw(text.Trim(), 200);
             if (r.Exact.Count == 0) return null;
             if (!string.IsNullOrEmpty(reading))
                 foreach (var t in r.Exact)
@@ -182,23 +182,70 @@ namespace TakobotoApp
 
         public static WordTag TagById(int id) { lock (Gate) return db.LoadWordById(id, Options); }
 
-        // The word ids of the dictionary are the JMdict entry numbers: 1,000,000 ... 2,822,600, about half of them in use.
-        // So a random word = a random number in that range, tried again until an entry exists (2 tries on average).
+        /// <summary>All the entries the text is exactly (a spelling or a reading): the engine's own order, at most <paramref name="max"/>.</summary>
+        public static List<WordTag> LookupAll(string text, int max)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return new List<WordTag>();
+            return SearchRaw(text.Trim(), 200).Exact.Take(max).ToList();
+        }
+
+        // ---- random words ------------------------------------------------------------------------------------------
+        // The word ids of the dictionary are the JMdict entry numbers: 1,000,000 ... 2,822,600. Only about one in ten
+        // numbers is an entry, almost all of them end in 0 or 5, so random multiples of 5 are tried until one exists.
         const int FirstId = 1000000, LastId = 2830000;
         static readonly Random rng = new Random();
 
-        /// <summary>A random entry of the whole dictionary.</summary>
-        public static WordTag RandomWord()
+        /// <summary>The engine has no frequency or "common word" tag. A word that has MANY example sentences is a word
+        /// people use, so that is the measure: at least this many (the sample showed about 2% of all entries do).</summary>
+        public const int CommonMinSentences = 25;
+
+        static bool IsKatakanaWord(WordTag t)
         {
-            for (int i = 0; i < 500; i++)
+            string main = WordItem.From(t).Main ?? "";
+            return main.Length > 0 && main.All(c => (c >= '゠' && c <= 'ヿ') || c == 'ｰ');
+        }
+
+        // call with the lock held
+        static bool IsCommon(WordTag t)
+        {
+            var w = db.LoadWord(t, Options);
+            int n = w.RecommendedSentences != null ? w.RecommendedSentences.Count : 0;
+            var list = new List<Sentence>();
+            var s = db.PrepareSentencesSearch(w, list);
+            db.SearchOtherSentences(s, CommonMinSentences, Options);
+            return n + list.Count >= CommonMinSentences;
+        }
+
+        /// <summary>A random entry of the whole dictionary. <paramref name="commonOnly"/>: only words with many example
+        /// sentences; <paramref name="skipKatakana"/>: not the words written in katakana (foreign words).</summary>
+        public static WordTag RandomWord(bool commonOnly = false, bool skipKatakana = false)
+        {
+            WordTag any = null;
+            for (int i = 0; i < 6000; i++)
             {
                 lock (Gate)
                 {
-                    var t = db.LoadWordById(rng.Next(FirstId, LastId + 1), Options);
-                    if (t != null) return t;
+                    var t = db.LoadWordById(rng.Next(FirstId / 5, LastId / 5 + 1) * 5, Options);
+                    if (t == null) continue;
+                    if (any == null) any = t;
+                    if (skipKatakana && IsKatakanaWord(t)) continue;
+                    if (commonOnly && !IsCommon(t)) continue;
+                    return t;
                 }
             }
-            return null;
+            return any;   // nothing matched in a reasonable time: any word is better than none
+        }
+
+        /// <summary>Several different random words (the suggestions on the empty search page).</summary>
+        public static List<WordTag> RandomWords(int count, bool commonOnly, bool skipKatakana)
+        {
+            var list = new List<WordTag>();
+            for (int guard = 0; list.Count < count && guard < count * 4; guard++)
+            {
+                var t = RandomWord(commonOnly, skipKatakana);
+                if (t != null && list.All(x => x.WordId != t.WordId)) list.Add(t);
+            }
+            return list;
         }
 
         public static WordKanji Kanji(char c) { lock (Gate) return db.LoadKanji(c, true); }
@@ -219,7 +266,9 @@ namespace TakobotoApp
 
         /// <summary>The example phrases of a word beyond the few recommended ones. The original app asked for 64; a common
         /// word has several hundred (食べる 770, 日本 1154) and they load in well under a second, so ask for up to 1000.</summary>
-        public static List<Sentence> MoreSentences(Word w, int max = 1000)
+        public const int SentenceCap = 3000;   // more sentences than this are not loaded (the card then says 3000+)
+
+        public static List<Sentence> MoreSentences(Word w, int max = SentenceCap)
         {
             var list = new List<Sentence>();
             lock (Gate)

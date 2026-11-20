@@ -11,7 +11,9 @@ It is a new user interface on top of the original Takoboto dictionary engine.
 - Instant search: Japanese (kanji, kana, romaji) and English / French / German / Russian; conjugated verbs and adjectives are recognised; matches are highlighted
 - A word opens in tabs: **Overview** (writings, reading, meanings with language flags, example phrases) | **Forms** (conjugations) | **Kanji** (readings, meanings, stroke-order diagrams)
 - Search as you type: romaji typed letter by letter (`nih` already lists にほ…), kanji mixed with Latin letters (`食b` → 食べ…), and a result list that keeps loading as you scroll (no 32-result cap)
-- Example sentences: every sentence the dictionary has for a word is shown right in the card (no button), loading as you scroll; all of it is offline, taken from the dictionary file
+- Select a word (or click a word of an example sentence): a pop-up shows it; a spelling or reading that several words share (こうこう = 高校, 孝行, 航行 ...) lists ALL of them, and the pop-up opens upwards when the mouse is near the bottom of the screen
+- The empty search page suggests 6 random common words, different every time; Settings: Random word can be limited to common words (many example sentences - the dictionary has no frequency list) and can skip words written in katakana
+- Example sentences: every sentence the dictionary has for a word (the card shows how many there are) is shown right in the card (no button), loading as you scroll; all of it is offline, taken from the dictionary file
 - All text in the word card is selectable; click a word of an example phrase (or select any word) to get a small pop-up with its reading and meaning, click the pop-up to open the entry
 - Five input modes under the search box, like Pleco: handwriting (placeholder, later), **search by radical** (puzzle), **keyboard**, voice and photo (placeholders). No mode is on at first (you just type); press a mode button to open it, press it again to close it
 - Search by radical fills the results area: the kanji that contain the picked radicals are on top, the radicals below, and a bar with the chosen kanji, backspace and **DONE** (DONE puts the chosen kanji into the search box)

@@ -11,6 +11,8 @@ namespace TakobotoApp
     {
         public string Theme = "dark";            // system | light | dark  (dark on first start)
         public string InputLayout = "hira";      // kana keyboard (and what the real keyboard types in the keyboard mode): hira | kata
+        public bool RandomCommon = true;         // Random word / suggestions: only common words (many example sentences)
+        public bool RandomSkipKatakana = false;  // ... and not the words written in katakana (foreign words)
         public string Scheme = "green";          // colour scheme: green | red | blue | yellow (see Schemes)
         public bool English = true;              // translation languages that are shown (see Langs); French/German/Russian are also searched
         public bool French = true;

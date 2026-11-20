@@ -37,6 +37,17 @@
         </StackPanel>
       </Border>
 
+      <!-- random word -->
+      <Border Background="{DynamicResource SurfaceBg}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="10" Padding="24,18,24,20" Margin="0,0,0,16">
+        <StackPanel>
+          <TextBlock Text="Random word" FontSize="20" Foreground="{DynamicResource Fg}" Margin="0,0,0,4"/>
+          <TextBlock Text="For the Random word button and the suggestions on the empty search page." FontSize="14" Foreground="{DynamicResource FgMuted}" TextWrapping="Wrap" Margin="0,0,0,14"/>
+          <CheckBox x:Name="CheckRandomCommon" Content="Only common words" Margin="0,0,0,2" Checked="Random_Click" Unchecked="Random_Click"/>
+          <TextBlock Text="The dictionary has no frequency list, so a word counts as common when it has many example sentences (25 or more)." FontSize="13" Foreground="{DynamicResource FgFaint}" TextWrapping="Wrap" Margin="30,0,0,12"/>
+          <CheckBox x:Name="CheckRandomKatakana" Content="Skip words written in katakana (foreign words)" Checked="Random_Click" Unchecked="Random_Click"/>
+        </StackPanel>
+      </Border>
+
       <!-- storage -->
       <Border Background="{DynamicResource SurfaceBg}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="10" Padding="24,18,24,20">
         <StackPanel>

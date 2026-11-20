@@ -133,6 +133,13 @@ namespace TakobotoApp
                 else if (a == "--scroll" && v != null) { i++; double d; if (double.TryParse(v, out d)) WordView.TestScroll = d; }
                 else if (a == "--word-test" && v != null) { i++; WordTest(v); }
                 else if (a == "--layout" && v != null) { i++; search.TestLayout(v); }
+                else if (a == "--preview" && v != null)   // the pop-up for this text, as if it had been selected, a few seconds after start
+                {
+                    i++; string pv = v;
+                    var tm = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+                    tm.Tick += (s, e) => { tm.Stop(); Preview.ShowForSelection(pv); };
+                    tm.Start();
+                }
                 else if (a == "--mode-clicks" && v != null) { i++; search.TestModeClicks(v.Split(',')); }
                 else if (a == "--type" && v != null) { i++; TypeTest(v); }
                 else if (a == "--page" && v != null)

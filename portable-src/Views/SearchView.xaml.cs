@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -49,11 +50,29 @@ namespace TakobotoApp
             List.ItemsSource = items;
             List.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(List_ScrollChanged));
             debounce.Tick += (s, e) => { debounce.Stop(); RunSearch(); };
-            foreach (var ex in new[] { "食べる", "taberu", "water", "Wasser", "вода", "日本語" })
+            RefreshExamples();
+        }
+
+        // ---- the suggestions on the empty page: 6 random common words, different every time ---------------------
+        int examplesGeneration;
+
+        async void RefreshExamples()
+        {
+            int my = ++examplesGeneration;
+            List<WordTag> tags = null;
+            bool skipKatakana = Store.Settings.RandomSkipKatakana;
+            try { tags = await Task.Run(() => Engine.RandomWords(6, true, skipKatakana)); }
+            catch (Exception ex) { App.Log(ex); }
+            if (my != examplesGeneration || tags == null) return;
+            Examples.Children.Clear();
+            foreach (var tag in tags)
             {
-                string text = ex;
-                var b = new Button { Style = (Style)FindResource("LinkButton"), Content = text, FontSize = 15, Margin = new Thickness(0, 0, 14, 0) };
-                b.Click += (s, e) => SetQuery(text);
+                var t = tag;
+                var item = WordItem.From(t);
+                var b = new Button { Style = (Style)FindResource("LinkButton"), Content = item.Main, FontSize = 16, Margin = new Thickness(0, 0, 14, 2) };
+                b.FontFamily = Ui.JpFont;
+                b.ToolTip = (string.IsNullOrEmpty(item.Reading) ? "" : item.Reading + " - ") + item.Meaning;
+                b.Click += (s, e) => OpenWord(t, item.Main);
                 Examples.Children.Add(b);
             }
         }
@@ -238,7 +257,8 @@ namespace TakobotoApp
         public async void OpenRandom()
         {
             WordTag tag = null;
-            try { tag = await Task.Run(() => Engine.RandomWord()); }
+            bool common = Store.Settings.RandomCommon, skipKatakana = Store.Settings.RandomSkipKatakana;
+            try { tag = await Task.Run(() => Engine.RandomWord(common, skipKatakana)); }
             catch (Exception ex) { App.Log(ex); }
             if (tag == null) return;
             string text = WordItem.From(tag).Main;
@@ -268,6 +288,7 @@ namespace TakobotoApp
                 items.Clear();
                 Detail.Clear();
                 StatusBar.Visibility = Visibility.Collapsed;
+                if (Hint.Visibility != Visibility.Visible) RefreshExamples();   // the empty page is shown again: new suggestions
                 Hint.Visibility = Visibility.Visible;
                 NothingFound.Visibility = Visibility.Collapsed;
                 pendingSelectId = 0;

@@ -42,7 +42,7 @@ public static class WinShot
             using (Graphics g = Graphics.FromImage(b)) { IntPtr dc = g.GetHdc(); PrintWindow(best, dc, 2); g.ReleaseHdc(dc); }
             b.Save(path, ImageFormat.Png);
         }
-        return "captured " + w + "x" + hh;
+        return "captured " + w + "x" + hh + " at " + rr.L + "," + rr.T;
     }
 }
 "@

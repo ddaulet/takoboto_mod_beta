@@ -22,6 +22,8 @@ namespace TakobotoApp
             CheckFrench.IsChecked = s.French;
             CheckGerman.IsChecked = s.German;
             CheckRussian.IsChecked = s.Russian;
+            CheckRandomCommon.IsChecked = s.RandomCommon;
+            CheckRandomKatakana.IsChecked = s.RandomSkipKatakana;
             DataPath.Text = Store.Dir;
 
             // one round colour dot + name per scheme
@@ -65,6 +67,14 @@ namespace TakobotoApp
             s.Russian = CheckRussian.IsChecked == true;
             Store.SaveSettings();
             MainWindow.Instance.RefreshSearch();
+        }
+
+        void Random_Click(object sender, RoutedEventArgs e)
+        {
+            if (loading) return;
+            Store.Settings.RandomCommon = CheckRandomCommon.IsChecked == true;
+            Store.Settings.RandomSkipKatakana = CheckRandomKatakana.IsChecked == true;
+            Store.SaveSettings();
         }
 
         void OpenFolder_Click(object sender, RoutedEventArgs e)

@@ -523,7 +523,8 @@ namespace TakobotoApp
             var outer = new StackPanel();
             var recommended = w.RecommendedSentences ?? new List<Sentence>();
             var stack = new StackPanel();
-            stack.Children.Add(Ui.Title("Example sentences"));
+            var title = Ui.Title("Example sentences");
+            stack.Children.Add(title);
             foreach (var s in recommended) stack.Children.Add(SentenceBlock(s));
 
             var moreHost = new StackPanel();
@@ -579,6 +580,9 @@ namespace TakobotoApp
                 var known = new HashSet<string>(recommended.Select(r => r.MainText));
                 pending.AddRange((found ?? new List<Sentence>()).Where(x => !known.Contains(x.MainText)));
                 loaded = true;
+                // how many there are: the card used to scroll on with no visible end
+                int total = recommended.Count + pending.Count;
+                if (total > 0) title.Text = "Example sentences: " + total + (found != null && found.Count >= Engine.SentenceCap ? "+" : "");
                 fill();
             };
             var ignore = load();   // runs in the background; errors are logged inside
