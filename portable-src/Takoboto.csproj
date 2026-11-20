@@ -31,6 +31,8 @@
     <EmbeddedResource Include="Assets\*.png" LogicalName="Assets.%(Filename)%(Extension)" />
     <!-- the icon again, as a resource: the window icon is recoloured with the colour scheme -->
     <EmbeddedResource Include="app.ico" LogicalName="Assets.app.ico" />
+    <!-- the strokes of the kana (KanjiVG) for the handwriting recognition -->
+    <EmbeddedResource Include="Assets\kana-strokes.txt" LogicalName="Assets.kana-strokes.txt" />
   </ItemGroup>
 
   <Target Name="CheckEngine" BeforeTargets="BeforeBuild">

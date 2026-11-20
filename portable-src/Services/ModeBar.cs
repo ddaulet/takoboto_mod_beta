@@ -43,13 +43,13 @@ namespace TakobotoApp
             scroll.SizeChanged += (s, e) => UpdateFade();
             grid.Children.Add(scroll);
 
-            var clear = new Button { Style = (Style)Application.Current.FindResource("RoundIconButton"), Content = Icons.Make(Icons.Close, 18, "Fg"), Width = 44, Height = 44, Margin = new Thickness(4, 0, 6, 0), ToolTip = "Clear" };
+            var clear = new Button { Style = (Style)Application.Current.FindResource("RoundIconButton"), Content = Icons.Make(Icons.Close, 20, "Fg"), Width = 44, Height = 44, Margin = new Thickness(4, 0, 6, 0), ToolTip = "Clear" };
             System.Windows.Automation.AutomationProperties.SetName(clear, "Clear");
             clear.Click += (s, e) => { if (ClearPressed != null) ClearPressed(); };
             Grid.SetColumn(clear, 1);
             grid.Children.Add(clear);
 
-            var done = new Button { Style = (Style)Application.Current.FindResource("RoundAccentButton"), Content = Icons.Make(Icons.Check, 22, "AccentFg"), Width = 44, Height = 44, Margin = new Thickness(0, 0, 12, 0), ToolTip = "Done: close and show the results" };
+            var done = new Button { Style = (Style)Application.Current.FindResource("RoundAccentButton"), Content = Icons.Make(Icons.Check, 20, "AccentFg", 2.4), Width = 44, Height = 44, Margin = new Thickness(0, 0, 12, 0), ToolTip = "Done: close and show the results" };
             System.Windows.Automation.AutomationProperties.SetName(done, "Done");
             done.Click += (s, e) => { if (DonePressed != null) DonePressed(); };
             Grid.SetColumn(done, 2);

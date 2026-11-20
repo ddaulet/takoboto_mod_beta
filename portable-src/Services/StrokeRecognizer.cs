@@ -29,6 +29,7 @@ namespace TakobotoApp
         {
             public char Ch;
             public float[][] Strokes;          // each: Points * 2 floats (x, y, x, y ...)
+            public float Penalty;              // added to the cost: the small kana (ぁ ゃ っ) look like the big ones, the big ones are offered first
         }
 
         readonly List<Template> templates = new List<Template>();
@@ -37,12 +38,12 @@ namespace TakobotoApp
 
         // ---- building the templates ------------------------------------------------------------------------------------
         /// <summary>Adds a character from its strokes as SVG path data (KanjiVG: 109 x 109 units).</summary>
-        public void AddTemplate(char ch, IList<string> strokePaths)
+        public void AddTemplate(char ch, IList<string> strokePaths, float penalty = 0)
         {
             var strokes = strokePaths.Select(p => FlattenPath(p)).Where(s => s.Count > 0).ToList();
             if (strokes.Count == 0) return;
             var t = Normalise(strokes);
-            if (t != null) templates.Add(new Template { Ch = ch, Strokes = t });
+            if (t != null) templates.Add(new Template { Ch = ch, Strokes = t, Penalty = penalty });
         }
 
         // ---- recognising -----------------------------------------------------------------------------------------------
@@ -63,7 +64,7 @@ namespace TakobotoApp
             {
                 int m = t.Strokes.Length;
                 if (Math.Abs(m - n) > MaxStrokeDifference) continue;
-                double cost = Cost(user, t.Strokes);
+                double cost = Cost(user, t.Strokes) + t.Penalty;
                 scored.Add(new KeyValuePair<char, double>(t.Ch, cost));
             }
             return scored.OrderBy(k => k.Value).Take(max).ToList();

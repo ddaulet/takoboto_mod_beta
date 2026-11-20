@@ -45,13 +45,15 @@ namespace TakobotoApp
             keyboard.LayoutChanged += () => { Store.Settings.InputLayout = keyboard.Layout; Store.SaveSettings(); };
             PanelHost.Content = keyboard;
             picker = new RadicalPicker();
-            picker.KanjiChosen += k => InsertRaw(k);   // a click on a kanji puts it into the search box at once
+            picker.KanjiChosen += k => InsertCandidate(k);   // a click on a kanji puts it into the search box (selected)
             picker.DoneRequested += () => CloseModes();
             RadicalHost.Child = picker;
             writing = new HandwritingPanel();
-            writing.KanjiChosen += k => InsertRaw(k);   // a click on a candidate puts it into the search box at once
+            writing.KanjiChosen += k => InsertCandidate(k);   // a click on a candidate puts it into the search box (selected)
             writing.DoneRequested += () => CloseModes();
             HandwritingHost.Child = writing;
+            Box.IsInactiveSelectionHighlightEnabled = true;   // the chosen candidate stays visibly selected while the focus is on the pad
+            Box.PreviewMouseDown += (s, e) => candLength = 0;   // a click into the box ends the replacing: the next candidate is added after
             List.ItemsSource = items;
             List.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(List_ScrollChanged));
             debounce.Tick += (s, e) => { debounce.Stop(); RunSearch(); };
@@ -95,6 +97,7 @@ namespace TakobotoApp
             if (m != Mode.None && m != mode) lastModeTick = Environment.TickCount;
             mode = m;
             ShowPanel();
+            if (searchPending && mode != Mode.Handwriting && mode != Mode.Radicals) { searchPending = false; debounce.Stop(); RunSearch(); }   // DONE: now the results and the card
         }
 
         void Mode_Click(object sender, RoutedEventArgs e)
@@ -115,10 +118,28 @@ namespace TakobotoApp
         /// <summary>Switch every mode off (the box is typed into with the keyboard as it is).</summary>
         public void CloseModes()
         {
+            candLength = 0;
             ModeKeyboard.IsChecked = false;
             ModeRadicals.IsChecked = false;
             ModeBrush.IsChecked = false;
             Box.Focus();
+            Box.Select(Box.Text.Length, 0);   // the candidate that was selected is accepted: the caret goes after it
+        }
+
+        /// <summary>For automated tests (--pick 0,1): choose candidates of the handwriting panel by number, one every second.</summary>
+        public void TestPick(int[] indexes)
+        {
+            var queue = new System.Collections.Generic.Queue<int>(indexes);
+            var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.2) };
+            t.Tick += (s, e) =>
+            {
+                if (queue.Count == 0) { t.Stop(); return; }
+                string c = writing.Candidates;
+                if (c.Length == 0) return;   // the candidates are not there yet
+                int i = queue.Dequeue();
+                if (i < c.Length) InsertCandidate(c[i].ToString());
+            };
+            t.Start();
         }
 
         /// <summary>For automated tests (--handwrite 学): open the handwriting mode and write this kanji on the pad.</summary>
@@ -149,6 +170,31 @@ namespace TakobotoApp
             int start = Box.SelectionStart;
             Box.Text = Box.Text.Remove(start, Box.SelectionLength).Insert(start, text);
             Box.CaretIndex = start + text.Length;
+        }
+
+        // ---- a candidate (handwriting, radicals) goes into the box SELECTED; another candidate replaces it, until the user clicks into the box
+        int candStart = -1, candLength;
+        string candText = "";
+        bool searchPending;
+
+        void InsertCandidate(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            string t = Box.Text;
+            int start;
+            if (candLength > 0 && candStart >= 0 && candStart + candLength <= t.Length && t.Substring(candStart, candLength) == candText)
+            {
+                t = t.Remove(candStart, candLength);          // the previous candidate is replaced
+                start = candStart;
+            }
+            else
+            {
+                start = Math.Min(Box.SelectionStart, t.Length);
+                t = t.Remove(start, Math.Min(Box.SelectionLength, t.Length - start));
+            }
+            Box.Text = t.Insert(start, text);
+            Box.Select(start, text.Length);
+            candStart = start; candLength = text.Length; candText = text;
         }
 
         void BackspaceKey()
@@ -292,6 +338,7 @@ namespace TakobotoApp
             Placeholder.Visibility = Box.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
             ClearBtn.Visibility = Box.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
             debounce.Stop();
+            if (mode == Mode.Handwriting || mode == Mode.Radicals) { searchPending = true; return; }   // no search and no card until DONE
             debounce.Start();
         }
 
@@ -397,6 +444,7 @@ namespace TakobotoApp
         void Box_KeyDown(object sender, KeyEventArgs e)
         {
             if ((e.Key == Key.Enter || e.Key == Key.Space) && KanaTyping) CommitPendingN();
+            candLength = 0;   // typing ends the replacing of the candidate
             if (e.Key == Key.Escape) { Box.Text = ""; e.Handled = true; }
             else if (e.Key == Key.Down && items.Count > 0)
             {

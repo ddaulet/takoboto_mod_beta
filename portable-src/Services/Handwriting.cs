@@ -43,7 +43,7 @@ namespace TakobotoApp
                         using (var s = File.OpenRead(CachePath))
                         {
                             var head = new byte[8]; s.Read(head, 0, 8);
-                            if (BitConverter.ToInt64(head, 0) == datSize) { recognizer = StrokeRecognizer.Load(s); return; }
+                            if (BitConverter.ToInt64(head, 0) == datSize) { var cached = StrokeRecognizer.Load(s); AddKana(cached); recognizer = cached; return; }
                         }
                     }
                     catch (Exception ex) { App.Log(ex); }
@@ -57,14 +57,42 @@ namespace TakobotoApp
                     var paths = Engine.StrokePaths(c);
                     if (paths != null) rec.AddTemplate(c, paths);
                 }
-                recognizer = rec;
                 try
                 {
-                    using (var s = File.Create(CachePath)) { s.Write(BitConverter.GetBytes(datSize), 0, 8); rec.Save(s); }
+                    using (var s = File.Create(CachePath)) { s.Write(BitConverter.GetBytes(datSize), 0, 8); rec.Save(s); }   // the kanji only: the kana come from the program itself
                 }
                 catch (Exception ex) { App.Log(ex); }
+                AddKana(rec);
+                recognizer = rec;
             }
             catch (Exception ex) { App.Log(ex); lock (Gate) loading = null; }
+        }
+
+        // Hiragana and katakana: their strokes (KanjiVG) are a small text resource of the program. They are matched exactly like the kanji.
+        static readonly string Small = "ぁぃぅぇぉっゃゅょゎゕゖァィゥェォッャュョヮヵヶ";
+
+        static void AddKana(StrokeRecognizer rec)
+        {
+            try
+            {
+                using (var s = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("Assets.kana-strokes.txt"))
+                {
+                    if (s == null) return;
+                    using (var r = new StreamReader(s, System.Text.Encoding.UTF8))
+                    {
+                        string line;
+                        while ((line = r.ReadLine()) != null)
+                        {
+                            if (line.Length < 3 || line[0] == '#') continue;
+                            var parts = line.Split('	');
+                            if (parts.Length < 2 || parts[0].Length != 1) continue;
+                            char c = parts[0][0];
+                            rec.AddTemplate(c, parts[1].Split('|'), Small.IndexOf(c) >= 0 ? 4f : 0f);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex) { App.Log(ex); }
         }
 
         /// <summary>The kanji the strokes most likely are (best first). Empty while the templates are not ready.</summary>

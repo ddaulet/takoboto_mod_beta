@@ -15,7 +15,7 @@ namespace TakobotoApp
     /// <summary>Handwriting input (the brush button of the search page). It fills the whole results area:
     ///   top    - the bar: the candidates for what was written (ONE row, one character each, scrolls sideways) | round X (clear the pad) | round green check (done);
     ///   below  - a square pad to write ONE kanji on with the mouse (or a pen), with a round undo button in its top right corner.
-    /// A click on a candidate puts it into the search box at once and clears the pad. The recognition is made by
+    /// A click on a candidate puts it into the search box (selected); the candidates stay. The recognition is made by
     /// <see cref="Handwriting"/>. Nothing in the panel changes size while you write.</summary>
     public class HandwritingPanel : UserControl
     {
@@ -69,7 +69,7 @@ namespace TakobotoApp
             padGrid.Children.Add(ink);
 
             // undo the last stroke: a round button in the top right corner of the pad
-            undo = new Button { Style = (Style)Application.Current.FindResource("RoundIconButton"), Content = Icons.Make(Icons.Undo, 18, "Fg"), Width = 40, Height = 40, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 8, 8, 0), ToolTip = "Undo the last stroke", IsEnabled = false };
+            undo = new Button { Style = (Style)Application.Current.FindResource("RoundIconButton"), Content = Icons.Make(Icons.Undo, 20, "Fg"), Width = 44, Height = 44, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 8, 8, 0), ToolTip = "Undo the last stroke", IsEnabled = false };
             System.Windows.Automation.AutomationProperties.SetName(undo, "Undo the last stroke");
             undo.Click += (s, e) => { if (ink.Strokes.Count > 0) { ink.Strokes.RemoveAt(ink.Strokes.Count - 1); Schedule(); } };
             padGrid.Children.Add(undo);
@@ -170,12 +170,15 @@ namespace TakobotoApp
                 box.ToolTip = k == null ? null : (k.AllMeanings ?? "");
             };
             box.ToolTip = "";
-            box.MouseLeftButtonUp += (s, e) =>
-            {
-                if (KanjiChosen != null) KanjiChosen(c.ToString());
-                Clear();   // the next kanji
-            };
+            // the candidates stay where they are: another one can be chosen instead; the X clears the pad
+            box.MouseLeftButtonUp += (s, e) => { if (KanjiChosen != null) KanjiChosen(c.ToString()); };
             return box;
+        }
+
+        /// <summary>The characters offered now, in order.</summary>
+        public string Candidates
+        {
+            get { return string.Concat(candidates.Children.OfType<Border>().Select(b => ((TextBlock)b.Child).Text)); }
         }
 
         // ---- for automated tests: write a kanji by laying its template strokes (a little distorted) on the pad ----------
