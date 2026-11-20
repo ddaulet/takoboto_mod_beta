@@ -23,13 +23,19 @@ namespace TakobotoApp
             CheckGerman.IsChecked = s.German;
             CheckRussian.IsChecked = s.Russian;
             CheckFurigana.IsChecked = s.Furigana;
-            VoiceFemale.IsChecked = !s.VoiceMale;
-            VoiceMale.IsChecked = s.VoiceMale;
+            var chosen = Voice.Find(s.VoiceKey, s.VoiceMale);
+            foreach (var v in Voice.Installed())
+            {
+                var rb = new RadioButton { Style = (Style)FindResource("ChoiceRadio"), GroupName = "voice", Margin = new Thickness(0, 0, 0, 12), Tag = v, IsChecked = chosen != null && v.Key == chosen.Key };
+                rb.Content = v.Name;
+                rb.Checked += Voice_Checked;
+                VoiceList.Children.Add(rb);
+            }
             SpeedFast.IsChecked = s.VoiceSpeed <= 0;
             SpeedMedium.IsChecked = s.VoiceSpeed == 1;
             SpeedSlow.IsChecked = s.VoiceSpeed >= 2;
             if (Voice.Available)
-                VoiceInfo.Text = "The loudspeaker next to a reading and after each example sentence reads it aloud. Works offline; the voice is VOICEVOX Nemo.";
+                VoiceInfo.Text = "The loudspeaker next to a reading and after each example sentence reads it aloud. Works offline; the voices are from VOICEVOX.";
             else
             {
                 VoiceInfo.Text = "The voice files are not found. Put the folder \"voice\" next to Takoboto.exe (it comes with the full download) and restart the program: the loudspeaker buttons then appear.";
@@ -87,9 +93,11 @@ namespace TakobotoApp
         void Voice_Checked(object sender, RoutedEventArgs e)
         {
             if (loading) return;
-            Store.Settings.VoiceMale = VoiceMale.IsChecked == true;
+            var voice = ((RadioButton)sender).Tag as Voice.VoiceInfo;
+            if (voice == null) return;
+            Store.Settings.VoiceKey = voice.Key;
             Store.SaveSettings();
-            Voice.Speak(Sample, Store.Settings.VoiceMale, Store.Settings.VoiceSpeed, null);   // the new voice says hello
+            Voice.Speak(Sample, Store.Settings.VoiceKey, Store.Settings.VoiceMale, Store.Settings.VoiceSpeed, null);   // the new voice says hello
         }
 
         void Speed_Checked(object sender, RoutedEventArgs e)
@@ -97,12 +105,12 @@ namespace TakobotoApp
             if (loading) return;
             Store.Settings.VoiceSpeed = SpeedSlow.IsChecked == true ? 2 : SpeedMedium.IsChecked == true ? 1 : 0;
             Store.SaveSettings();
-            Voice.Speak(Sample, Store.Settings.VoiceMale, Store.Settings.VoiceSpeed, null);   // the new speed
+            Voice.Speak(Sample, Store.Settings.VoiceKey, Store.Settings.VoiceMale, Store.Settings.VoiceSpeed, null);   // the new speed
         }
 
         void VoiceTest_Click(object sender, RoutedEventArgs e)
         {
-            Voice.Speak(Sample, Store.Settings.VoiceMale, Store.Settings.VoiceSpeed, null);
+            Voice.Speak(Sample, Store.Settings.VoiceKey, Store.Settings.VoiceMale, Store.Settings.VoiceSpeed, null);
         }
 
         void Furigana_Click(object sender, RoutedEventArgs e)

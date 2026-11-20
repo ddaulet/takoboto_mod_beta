@@ -153,7 +153,7 @@ namespace TakobotoApp
                 root.Children.Add(Ui.SText("This word could not be loaded.", 16, "FgMuted"));
                 return;
             }
-            Voice.Warm();   // the voice takes some seconds to load: start now, so that the first click does not wait (nothing happens without the voice folder)
+            Voice.Warm(Store.Settings.VoiceKey, Store.Settings.VoiceMale);   // the voice takes some seconds to load: start now, so that the first click does not wait (nothing happens without the voice folder)
             Build(w, tag);
             scroll.ScrollToTop();
             if (TestScroll > 0) { var off = TestScroll; Dispatcher.BeginInvoke(new Action(() => scroll.ScrollToVerticalOffset(off)), System.Windows.Threading.DispatcherPriority.Background); }

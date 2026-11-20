@@ -22,7 +22,7 @@
           <TextBlock TextWrapping="Wrap" FontSize="14.5" Foreground="{DynamicResource FgMuted}" Margin="0,0,0,10"
                      Text="The example sentences come from the projects Tatoeba and Tanaka Corpus."/>
           <TextBlock TextWrapping="Wrap" FontSize="14.5" Foreground="{DynamicResource FgMuted}" Margin="0,0,0,18"
-                     Text="Pronunciation (the loudspeaker buttons): speech synthesis by VOICEVOX CORE, voices: VOICEVOX Nemo (voicevox.hiroshiba.jp/nemo). Works offline."/>
+                     Text="Pronunciation (the loudspeaker buttons): speech synthesis by VOICEVOX CORE (voicevox.hiroshiba.jp). Voices: VOICEVOX Nemo; VOICEVOX:青山龍星; VOICEVOX:玄野武宏. Works offline."/>
           <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,0,0,16"/>
           <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="{DynamicResource FgMuted}"
                      Text="This is a portable desktop edition: one folder, no installation. It uses the original Takoboto dictionary engine and data. Keyboard: Ctrl+F or Ctrl+1 search, Ctrl+2 history, Ctrl+3 favorites, Ctrl+4 lists, Ctrl+5 kanji by radicals."/>
