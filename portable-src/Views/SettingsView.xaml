@@ -28,8 +28,9 @@
       <!-- languages -->
       <Border Background="{DynamicResource SurfaceBg}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="10" Padding="24,18,24,20" Margin="0,0,0,16">
         <StackPanel>
-          <TextBlock Text="Additional languages" FontSize="20" Foreground="{DynamicResource Fg}" Margin="0,0,0,4"/>
-          <TextBlock Text="Also display and search the following languages (English is always on):" FontSize="14" Foreground="{DynamicResource FgMuted}" TextWrapping="Wrap" Margin="0,0,0,14"/>
+          <TextBlock Text="Translation languages" FontSize="20" Foreground="{DynamicResource Fg}" Margin="0,0,0,4"/>
+          <TextBlock Text="Show translations in these languages (French, German and Russian are also searched). If a word, meaning or phrase has no translation in the ticked languages, the languages it does have are shown instead, so that nothing is left empty." FontSize="14" Foreground="{DynamicResource FgMuted}" TextWrapping="Wrap" Margin="0,0,0,14"/>
+          <CheckBox x:Name="CheckEnglish" Content="English" Margin="0,0,0,12" Checked="Language_Click" Unchecked="Language_Click"/>
           <CheckBox x:Name="CheckFrench" Content="French" Margin="0,0,0,12" Checked="Language_Click" Unchecked="Language_Click"/>
           <CheckBox x:Name="CheckGerman" Content="German" Margin="0,0,0,12" Checked="Language_Click" Unchecked="Language_Click"/>
           <CheckBox x:Name="CheckRussian" Content="Russian" Checked="Language_Click" Unchecked="Language_Click"/>

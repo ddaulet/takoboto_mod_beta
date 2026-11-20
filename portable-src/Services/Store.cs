@@ -11,7 +11,8 @@ namespace TakobotoApp
     {
         public string Theme = "dark";            // system | light | dark  (dark on first start)
         public string Scheme = "green";          // colour scheme: green | red | blue | yellow (see Schemes)
-        public bool French = true;               // "Also display and search the following languages"
+        public bool English = true;              // translation languages that are shown (see Langs); French/German/Russian are also searched
+        public bool French = true;
         public bool German = true;
         public bool Russian = true;
         public double Width = 1180, Height = 760, Left = -1, Top = -1;

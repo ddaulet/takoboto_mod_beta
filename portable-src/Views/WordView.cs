@@ -243,7 +243,9 @@ namespace TakobotoApp
                 int n = 1;
                 foreach (var m in w.Meanings ?? new List<WordMeaning>())
                 {
-                    var en = m.Parts.Where(p => p.Language == Takoboto.Database.Language.English).Select(p => p.Text);
+                    var shown = Langs.Pick(m.Parts, p => p.Language);   // the first language that is shown
+                    var first = shown.Count > 0 ? shown[0].Language : Takoboto.Database.Language.English;
+                    var en = shown.Where(p => p.Language == first).Select(p => p.Text);
                     sb.AppendLine((w.Meanings.Count > 1 ? n + ". " : "") + string.Join("; ", en));
                     n++;
                 }
@@ -298,25 +300,48 @@ namespace TakobotoApp
                 var body = new StackPanel();
                 if (m.HasInfos)
                     body.Children.Add(Ui.SText(string.Join("\n", m.Infos.Select(i => i.Text)), 13.5, "FgMuted", null, new Thickness(0, 0, 0, 4)));
-                foreach (var part in m.Parts)
-                {
-                    var line = new Grid { Margin = new Thickness(0, 1, 0, 1) };
-                    line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                    line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                    var flag = Ui.Flag(part.Language, 18);
-                    flag.Margin = new Thickness(0, 3, 10, 0);
-                    line.Children.Add(flag);
-                    var t = Ui.SText(part.Text, 16, "Fg", part.IsPrimary ? FontWeights.SemiBold : FontWeights.Normal);
-                    if (!part.IsPrimary) t.SetResourceReference(TextBlock.ForegroundProperty, "FgMuted");
-                    Grid.SetColumn(t, 1);
-                    line.Children.Add(t);
-                    body.Children.Add(line);
-                }
+                // only the languages the user wants (all there are, if this meaning has none of them), one flag per language
+                var shown = Langs.Pick(m.Parts, p => p.Language);
+                body.Children.Add(TranslationBlock(shown.Select(p => new TLine { Lang = p.Language, Text = p.Text, Primary = p.IsPrimary }), 18, 16, true));
                 Grid.SetColumn(body, 1);
                 row.Children.Add(body);
                 stack.Children.Add(row);
             }
             return Ui.Card(stack);
+        }
+
+        // ---- translations: ONE flag per language, at the top left of that language's lines ---------------------------
+        class TLine { public Language Lang; public string Text; public bool Primary = true; }
+
+        /// <summary>The translations grouped by language (in the order the languages first appear): a flag at the top left
+        /// and that language's lines stacked to its right. <paramref name="meaning"/>: the main lines of a meaning are bold,
+        /// the others muted; otherwise (example phrases) all lines are muted.</summary>
+        static UIElement TranslationBlock(IEnumerable<TLine> lines, double flagSize, double fontSize, bool meaning)
+        {
+            var panel = new StackPanel();
+            foreach (var group in lines.GroupBy(l => l.Lang))
+            {
+                var row = new Grid { Margin = new Thickness(0, panel.Children.Count == 0 ? 0 : 6, 0, 0) };
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                var flag = Ui.Flag(group.Key, flagSize);
+                flag.VerticalAlignment = VerticalAlignment.Top;
+                flag.Margin = new Thickness(0, 3, 10, 0);
+                row.Children.Add(flag);
+
+                var texts = new StackPanel();
+                foreach (var l in group)
+                {
+                    var t = meaning
+                        ? Ui.SText(l.Text, fontSize, l.Primary ? "Fg" : "FgMuted", l.Primary ? FontWeights.SemiBold : FontWeights.Normal, new Thickness(0, 1, 0, 1))
+                        : Ui.SText(l.Text, fontSize, "FgMuted", null, new Thickness(0, 1, 0, 1));
+                    texts.Children.Add(t);
+                }
+                Grid.SetColumn(texts, 1);
+                row.Children.Add(texts);
+                panel.Children.Add(row);
+            }
+            return panel;
         }
 
         // ---- forms (own tab, always fully shown) --------------------------------------------------------------------
@@ -561,21 +586,8 @@ namespace TakobotoApp
             left.SetResourceReference(Border.BorderBrushProperty, "Line");
 
             var right = new StackPanel { Margin = new Thickness(16, 11, 0, 11) };
-            bool first = true;
-            foreach (var t in s.Translations)
-            {
-                var line = new Grid { Margin = new Thickness(0, first ? 0 : 5, 0, 0) };
-                first = false;
-                line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                var flag = Ui.Flag(t.Language, 16);
-                flag.Margin = new Thickness(0, 3, 8, 0);
-                line.Children.Add(flag);
-                var tx = Ui.SText(t.Text, 15, "FgMuted");
-                Grid.SetColumn(tx, 1);
-                line.Children.Add(tx);
-                right.Children.Add(line);
-            }
+            var shown = Langs.Pick(s.Translations, t => t.Language);   // the wanted languages; everything if there is none of them
+            right.Children.Add(TranslationBlock(shown.Select(t => new TLine { Lang = t.Language, Text = t.Text }), 16, 15, false));
             Grid.SetColumn(right, 1);
             grid.Children.Add(left);
             grid.Children.Add(right);

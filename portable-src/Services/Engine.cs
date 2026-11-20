@@ -276,9 +276,20 @@ namespace TakobotoApp
                 item.Others = string.Join("、", kana.Where(p => p != m).Select(p => p.Text));
             }
 
-            string meaning = (t.TranslationTextPrimary ?? "").Trim();
-            string more = (t.TranslationTextSecondary ?? "").Trim().TrimStart(',', ' ');
-            item.Meaning = more.Length > 0 ? meaning + "; " + more : meaning;
+            // the meaning line, in the languages the user wants (the engine's own text mixes all languages)
+            string meaning, more;
+            if (t.TranslationParts != null && t.TranslationParts.Count > 0)
+            {
+                var shown = Langs.Pick(t.TranslationParts, p => p.Language);
+                meaning = string.Join(", ", shown.Where(p => p.IsPrimary).Select(p => p.Text));
+                more = string.Join(", ", shown.Where(p => !p.IsPrimary).Select(p => p.Text));
+            }
+            else
+            {
+                meaning = (t.TranslationTextPrimary ?? "").Trim();
+                more = (t.TranslationTextSecondary ?? "").Trim().TrimStart(',', ' ');
+            }
+            item.Meaning = more.Length == 0 ? meaning : meaning.Length == 0 ? more : meaning + "; " + more;
             if (t.Conjugated && !string.IsNullOrEmpty(t.ConjugatedText)) item.Conjugation = "Conjugated: " + t.ConjugatedText;
             if (removable) item.RemoveVis = System.Windows.Visibility.Visible;
             return item;

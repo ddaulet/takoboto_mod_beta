@@ -18,6 +18,7 @@ namespace TakobotoApp
             ThemeSystem.IsChecked = s.Theme == "system";
             ThemeLight.IsChecked = s.Theme == "light";
             ThemeDark.IsChecked = s.Theme != "system" && s.Theme != "light";
+            CheckEnglish.IsChecked = s.English;
             CheckFrench.IsChecked = s.French;
             CheckGerman.IsChecked = s.German;
             CheckRussian.IsChecked = s.Russian;
@@ -53,6 +54,12 @@ namespace TakobotoApp
         {
             if (loading) return;
             var s = Store.Settings;
+            // at least one language has to stay ticked
+            if (CheckEnglish.IsChecked != true && CheckFrench.IsChecked != true && CheckGerman.IsChecked != true && CheckRussian.IsChecked != true)
+            {
+                loading = true; ((CheckBox)sender).IsChecked = true; loading = false;
+            }
+            s.English = CheckEnglish.IsChecked == true;
             s.French = CheckFrench.IsChecked == true;
             s.German = CheckGerman.IsChecked == true;
             s.Russian = CheckRussian.IsChecked == true;
