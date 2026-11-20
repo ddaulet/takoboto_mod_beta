@@ -28,9 +28,10 @@ namespace TakobotoApp
         // ---- the five input modes under the search box ------------------------------------------------------------
         // No mode is on at first: the search box is typed into with the keyboard as it is. A click on a mode button switches
         // it on (its panel appears), a click on the same button again switches it off.
-        enum Mode { None, Keyboard, Radicals }
+        enum Mode { None, Keyboard, Radicals, Handwriting }
         InputKeyboard keyboard;
         RadicalPicker picker;
+        HandwritingPanel writing;
         Mode mode = Mode.None;
         int lastModeTick;
 
@@ -44,9 +45,11 @@ namespace TakobotoApp
             keyboard.LayoutChanged += () => { Store.Settings.InputLayout = keyboard.Layout; Store.SaveSettings(); };
             PanelHost.Content = keyboard;
             picker = new RadicalPicker();
-            picker.Done += text => { InsertRaw(text); CloseModes(); };    // DONE: the chosen kanji go into the search box
-            picker.BackspaceRequested += () => BackspaceKey();
+            picker.KanjiChosen += k => InsertRaw(k);   // a click on a kanji puts it into the search box at once
             RadicalHost.Child = picker;
+            writing = new HandwritingPanel();
+            writing.KanjiChosen += k => InsertRaw(k);   // a click on a candidate puts it into the search box at once
+            HandwritingHost.Child = writing;
             List.ItemsSource = items;
             List.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(List_ScrollChanged));
             debounce.Tick += (s, e) => { debounce.Stop(); RunSearch(); };
@@ -86,7 +89,7 @@ namespace TakobotoApp
         void Mode_Changed(object sender, RoutedEventArgs e)
         {
             if (keyboard == null) return;   // while the page is being built
-            var m = ModeRadicals.IsChecked == true ? Mode.Radicals : ModeKeyboard.IsChecked == true ? Mode.Keyboard : Mode.None;
+            var m = ModeBrush.IsChecked == true ? Mode.Handwriting : ModeRadicals.IsChecked == true ? Mode.Radicals : ModeKeyboard.IsChecked == true ? Mode.Keyboard : Mode.None;
             if (m != Mode.None && m != mode) lastModeTick = Environment.TickCount;
             mode = m;
             ShowPanel();
@@ -104,6 +107,7 @@ namespace TakobotoApp
         {
             PanelBorder.Visibility = mode == Mode.Keyboard ? Visibility.Visible : Visibility.Collapsed;
             RadicalHost.Visibility = mode == Mode.Radicals ? Visibility.Visible : Visibility.Collapsed;
+            HandwritingHost.Visibility = mode == Mode.Handwriting ? Visibility.Visible : Visibility.Collapsed;
         }
 
         /// <summary>Switch every mode off (the box is typed into with the keyboard as it is).</summary>
@@ -111,7 +115,17 @@ namespace TakobotoApp
         {
             ModeKeyboard.IsChecked = false;
             ModeRadicals.IsChecked = false;
+            ModeBrush.IsChecked = false;
             Box.Focus();
+        }
+
+        /// <summary>For automated tests (--handwrite 学): open the handwriting mode and write this kanji on the pad.</summary>
+        public void TestHandwrite(char c)
+        {
+            ModeBrush.IsChecked = true;
+            var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(7) };   // the templates are built first (a few seconds)
+            t.Tick += (s, e) => { t.Stop(); writing.TestDraw(c); };
+            t.Start();
         }
 
         /// <summary>Switch to the radicals (puzzle) mode.</summary>

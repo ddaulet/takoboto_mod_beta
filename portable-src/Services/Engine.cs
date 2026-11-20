@@ -250,6 +250,26 @@ namespace TakobotoApp
 
         public static WordKanji Kanji(char c) { lock (Gate) return db.LoadKanji(c, true); }
 
+        /// <summary>The strokes of a kanji as SVG paths, one per stroke in writing order (the stroke-order data of the dictionary,
+        /// KanjiVG). The dictionary hands them out only with a WORD, so one that contains the kanji is looked up. Null when
+        /// the kanji has no stroke data (or no word).</summary>
+        public static List<string> StrokePaths(char c)
+        {
+            lock (Gate)
+            {
+                var exact = new List<WordTag>(); var partial = new List<WordTag>();
+                db.Search(db.PrepareSearch(c.ToString(), exact, partial, Options), 60);
+                var tag = exact.Concat(partial).FirstOrDefault(t => (t.JapaneseParts ?? new List<WordPart>()).Any(p => p.Text != null && p.Text.IndexOf(c) >= 0));
+                if (tag == null) return null;
+                var w = db.LoadWord(tag, Options);
+                var k = w.Kanjis == null ? null : w.Kanjis.FirstOrDefault(x => x.Kanji == c.ToString());
+                if (k == null || k.KanjiStrokes == null || k.KanjiStrokes.Count == 0) return null;
+                // every step shows all the strokes so far; the one flagged "last" is the stroke that was added in this step
+                var paths = k.KanjiStrokes.Select(step => step.Paths.FirstOrDefault(p => p.IsLast)).Where(p => p != null).Select(p => p.Data).ToList();
+                return paths.Count == 0 ? null : paths;
+            }
+        }
+
         /// <summary>Most common kanji first.</summary>
         public static List<WordKanji> OrderedKanji(string chars, int max)
         {

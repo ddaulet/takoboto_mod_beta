@@ -135,6 +135,7 @@ namespace TakobotoApp
                 else if (a == "--tab" && v != null) { i++; WordView.TestTab = v; }
                 else if (a == "--scroll" && v != null) { i++; double d; if (double.TryParse(v, out d)) WordView.TestScroll = d; }
                 else if (a == "--word-test" && v != null) { i++; WordTest(v); }
+                else if (a == "--handwrite" && v != null && v.Length > 0) { i++; search.TestHandwrite(v[0]); }
                 else if (a == "--layout" && v != null) { i++; search.TestLayout(v); }
                 else if (a == "--preview" && v != null)   // the pop-up for this text, as if it had been selected, a few seconds after start
                 {

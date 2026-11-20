@@ -12,8 +12,8 @@ using Takoboto.Database.Impl;
 namespace TakobotoApp
 {
     /// <summary>"Search by radical" (the puzzle button of the search page). It fills the whole results area:
-    ///   top    - the chosen kanji, a backspace button and DONE (DONE puts the chosen kanji into the search box),
-    ///   then   - the picked radicals and the kanji that contain all of them (click a kanji to CHOOSE it),
+    ///   top    - a plain band with the radicals picked so far (no input box, no buttons),
+    ///   then   - the kanji that contain all of them: a click puts the kanji into the search box at once,
     ///   below  - the radicals, by stroke count.
     /// Same logic as the original app: the selected radicals' kanji lists are intersected; radicals that would give an
     /// empty result are disabled.</summary>
@@ -29,113 +29,72 @@ namespace TakobotoApp
             public bool Enabled = true;
         }
 
-        public event Action<string> Done;           // the chosen kanji (may be empty): put them into the search box
-        public event Action BackspaceRequested;     // backspace with nothing chosen: delete in the search box
+        public event Action<string> KanjiChosen;   // a click on a kanji: it goes into the search box at once
 
         readonly List<Tile> tiles = new List<Tile>();
         readonly WrapPanel kanjiPanel = new WrapPanel();
-        readonly TextBlock summary;
+        readonly WrapPanel strip = new WrapPanel();      // the picked radicals
+        readonly TextBlock stripHint;
         readonly TextBlock kanjiInfo;
-        readonly Button clearBtn;
-        readonly TextBlock chosenText;
         int token;
         string candidates;   // kanji that contain every selected radical (null = nothing selected)
-        string chosen = "";  // the kanji clicked so far (waiting for DONE)
 
         public RadicalPicker()
         {
             var root = new Grid();
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });                                          // chosen kanji | backspace | DONE
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });                                          // the picked radicals | Clear
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });                                          // the picked radicals
             root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(2, GridUnitType.Star), MinHeight = 120 });    // the kanji
             root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(3, GridUnitType.Star), MinHeight = 140 });    // the radicals
 
-            // row 1: the picked radicals
-            var top = new Grid { Margin = new Thickness(16, 10, 16, 4) };
-            top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            summary = Ui.Text("Pick the radicals the kanji contains.", 13.5, "FgMuted", null, null, true);
-            summary.VerticalAlignment = VerticalAlignment.Center;
-            summary.TextWrapping = TextWrapping.NoWrap;
-            summary.TextTrimming = TextTrimming.CharacterEllipsis;
-            top.Children.Add(summary);
-            clearBtn = new Button { Style = (Style)Application.Current.FindResource("LinkButton"), Content = "Clear", IsEnabled = false, Focusable = false };
-            clearBtn.Click += (s, e) => ClearSelection();
-            Grid.SetColumn(clearBtn, 1);
-            top.Children.Add(clearBtn);
-            Grid.SetRow(top, 1);
+            // row 0: just the list of the radicals picked so far (a plain band, no buttons); a click on one takes it off again
+            var top = new Border { MinHeight = 56, Padding = new Thickness(12, 6, 12, 6), BorderThickness = new Thickness(0, 0, 0, 1) };
+            top.SetResourceReference(Border.BackgroundProperty, "SurfaceBg");
+            top.SetResourceReference(Border.BorderBrushProperty, "Line");
+            stripHint = Ui.Text("Pick the radicals the kanji contains.", 14, "FgFaint", null, new Thickness(4, 0, 0, 0));
+            stripHint.VerticalAlignment = VerticalAlignment.Center;
+            var topGrid = new Grid();
+            topGrid.Children.Add(strip);
+            topGrid.Children.Add(stripHint);
+            top.Child = topGrid;
             root.Children.Add(top);
 
-            // row 2: the kanji that contain the chosen radicals
-            var results = new Grid { Margin = new Thickness(16, 0, 10, 0) };
+            // row 1: the kanji that contain the picked radicals; a click on one puts it into the search box
+            var results = new Grid { Margin = new Thickness(16, 8, 10, 0) };
             results.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             results.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            kanjiInfo = Ui.Text("The kanji will appear here. Click one to choose it, then press DONE.", 12.5, "FgFaint", null, new Thickness(0, 0, 0, 4));
+            kanjiInfo = Ui.Text("The kanji will appear here. Click one to put it into the search box.", 12.5, "FgFaint", null, new Thickness(0, 0, 0, 4));
             results.Children.Add(kanjiInfo);
             var kanjiScroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = kanjiPanel };
             Grid.SetRow(kanjiScroll, 1);
             results.Children.Add(kanjiScroll);
-            Grid.SetRow(results, 2);
+            Grid.SetRow(results, 1);
             root.Children.Add(results);
 
-            // row 3: the radicals
+            // row 2: the radicals
             var radicalBorder = new Border { BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(16, 2, 10, 0) };
             radicalBorder.SetResourceReference(Border.BorderBrushProperty, "Line");
             radicalBorder.Child = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = BuildRadicals() };
-            Grid.SetRow(radicalBorder, 3);
+            Grid.SetRow(radicalBorder, 2);
             root.Children.Add(radicalBorder);
 
-            // row 0 (right under the mode buttons): chosen kanji | backspace | DONE
-            var bar = new Border { BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(12, 8, 12, 8) };
-            bar.SetResourceReference(Border.BorderBrushProperty, "Line");
-            var barGrid = new Grid();
-            barGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            barGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            barGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            var chosenBox = new Border { CornerRadius = new CornerRadius(8), BorderThickness = new Thickness(1), Height = 46, Padding = new Thickness(12, 0, 12, 0), Margin = new Thickness(0, 0, 8, 0) };
-            chosenBox.SetResourceReference(Border.BackgroundProperty, "SurfaceBg");
-            chosenBox.SetResourceReference(Border.BorderBrushProperty, "Line");
-            chosenText = new TextBlock { FontFamily = Ui.JpFont, FontSize = 26, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
-            chosenBox.Child = chosenText;
-            barGrid.Children.Add(chosenBox);
-            var back = new Button { Style = (Style)Application.Current.FindResource("KeyButton"), Content = "⌫", Width = 64, Height = 46, Margin = new Thickness(0, 0, 8, 0), Focusable = false, ToolTip = "Remove the last chosen kanji" };
-            back.Click += (s, e) => Backspace();
-            Grid.SetColumn(back, 1);
-            barGrid.Children.Add(back);
-            var done = new Button { Style = (Style)Application.Current.FindResource("AccentButton"), Content = "DONE", Height = 46, MinWidth = 84, Focusable = false, ToolTip = "Put the chosen kanji into the search box" };
-            done.Click += (s, e) => Finish();
-            Grid.SetColumn(done, 2);
-            barGrid.Children.Add(done);
-            bar.Child = barGrid;
-            Grid.SetRow(bar, 0);
-            root.Children.Add(bar);
-
             Content = root;
-            ShowChosen();
         }
 
-        // ---- the chosen kanji ----------------------------------------------------------------------------------------
-        void ShowChosen()
+        // the band at the top: one small tile per picked radical
+        void ShowStrip(KanjiRadical[] picked)
         {
-            if (chosen.Length == 0) { chosenText.Text = "no kanji chosen"; chosenText.FontSize = 14; chosenText.SetResourceReference(TextBlock.ForegroundProperty, "FgFaint"); chosenText.FontFamily = new FontFamily("Segoe UI"); }
-            else { chosenText.Text = chosen; chosenText.FontSize = 26; chosenText.SetResourceReference(TextBlock.ForegroundProperty, "Fg"); chosenText.FontFamily = Ui.JpFont; }
-        }
-
-        void Choose(string kanji) { chosen += kanji; ShowChosen(); }
-
-        void Backspace()
-        {
-            if (chosen.Length > 0) { chosen = chosen.Substring(0, chosen.Length - 1); ShowChosen(); }
-            else if (BackspaceRequested != null) BackspaceRequested();
-        }
-
-        void Finish()
-        {
-            string text = chosen;
-            chosen = "";
-            ClearSelection();
-            ShowChosen();
-            if (Done != null) Done(text);
+            strip.Children.Clear();
+            stripHint.Visibility = picked.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+            foreach (var r in picked)
+            {
+                var radical = r;
+                var label = new TextBlock { Text = radical.Radical.ToString(), FontSize = 26, FontFamily = Ui.JpFont, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+                label.SetResourceReference(TextBlock.ForegroundProperty, "AccentFg");
+                var box = new Border { Width = 44, Height = 44, Margin = new Thickness(0, 0, 6, 0), CornerRadius = new CornerRadius(8), Cursor = Cursors.Hand, Child = label, ToolTip = "Click to take this radical off" };
+                box.SetResourceReference(Border.BackgroundProperty, "AccentFill");
+                box.MouseLeftButtonUp += (s, e) => { var t = tiles.FirstOrDefault(x => x.Radical == radical); if (t != null && t.Selected) { t.Selected = false; Recalculate(); } };
+                strip.Children.Add(box);
+            }
         }
 
         // ---- the radical grid -----------------------------------------------------------------------------------
@@ -215,9 +174,7 @@ namespace TakobotoApp
                 t.Enabled = t.Selected || candidates == null || KanjiRadical.HasIntersect(candidates, t.Radical.Kanjis);
                 PaintTile(t);
             }
-            var picked = tiles.Where(x => x.Selected).Select(x => x.Radical.Radical).ToArray();
-            clearBtn.IsEnabled = picked.Length > 0;
-            summary.Text = picked.Length == 0 ? "Pick the radicals the kanji contains." : "Radicals: " + string.Join(" ", picked);
+            ShowStrip(tiles.Where(x => x.Selected).Select(x => x.Radical).ToArray());
             UpdateResults();
         }
 
@@ -231,8 +188,7 @@ namespace TakobotoApp
         {
             foreach (var t in tiles) { t.Selected = false; t.Enabled = true; PaintTile(t); }
             candidates = null;
-            clearBtn.IsEnabled = false;
-            summary.Text = "Pick the radicals the kanji contains.";
+            ShowStrip(new KanjiRadical[0]);
             UpdateResults();
         }
 
@@ -243,7 +199,7 @@ namespace TakobotoApp
             kanjiPanel.Children.Clear();
             if (string.IsNullOrEmpty(candidates))
             {
-                kanjiInfo.Text = candidates == null ? "The kanji will appear here. Click one to choose it, then press DONE." : "No kanji contain all these radicals.";
+                kanjiInfo.Text = candidates == null ? "The kanji will appear here. Click one to put it into the search box." : "No kanji contain all these radicals.";
                 return;
             }
             kanjiInfo.Text = "Looking up…";
@@ -253,7 +209,7 @@ namespace TakobotoApp
             catch (Exception ex) { App.Log(ex); }
             if (my != token || kanji == null) return;
 
-            kanjiInfo.Text = chars.Length + " kanji" + (chars.Length > kanji.Count ? " (the " + kanji.Count + " most common)" : "") + " - click one to choose it";
+            kanjiInfo.Text = chars.Length + " kanji" + (chars.Length > kanji.Count ? " (the " + kanji.Count + " most common)" : "") + " - click one to put it into the search box";
             foreach (var k in kanji) kanjiPanel.Children.Add(KanjiTile(k));
         }
 
@@ -271,7 +227,7 @@ namespace TakobotoApp
             box.MouseEnter += (s, e) => box.SetResourceReference(Border.BackgroundProperty, "HoverBg");
             box.MouseLeave += (s, e) => box.SetResourceReference(Border.BackgroundProperty, "SurfaceBg");
             string ch = k.Kanji;
-            box.MouseLeftButtonUp += (s, e) => Choose(ch);
+            box.MouseLeftButtonUp += (s, e) => { if (KanjiChosen != null) KanjiChosen(ch); };
             return box;
         }
     }
