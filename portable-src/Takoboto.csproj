@@ -17,23 +17,23 @@
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
   </PropertyGroup>
 
-  <!-- app.ico is generated from your own Takoboto installer by tools\prepare-from-original.ps1 -->
+  <!-- app.ico: the green mascot icon (made by tools\make_ico.ps1) -->
   <PropertyGroup Condition="Exists('app.ico')">
     <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- the original dictionary engine (portable class library); not part of this repository -->
+    <!-- the original dictionary engine (portable class library, by the author of Takoboto), kept in lib\ -->
     <Reference Include="Takoboto.Database">
-      <HintPath>..\extracted\app\Takoboto.Database.dll</HintPath>
+      <HintPath>lib\Takoboto.Database.dll</HintPath>
     </Reference>
-    <!-- flags, logos: generated/copied from your own Takoboto installer by the prepare script -->
+    <!-- flags, logos -->
     <EmbeddedResource Include="Assets\*.png" LogicalName="Assets.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <Target Name="CheckEngine" BeforeTargets="BeforeBuild">
-    <Error Condition="!Exists('..\extracted\app\Takoboto.Database.dll')"
-           Text="Takoboto.Database.dll was not found. Run tools\prepare-from-original.ps1 first (see README.md)." />
+    <Error Condition="!Exists('lib\Takoboto.Database.dll')"
+           Text="portable-src\lib\Takoboto.Database.dll is missing: it is part of the repository (or run tools\prepare-from-original.ps1)." />
   </Target>
 
 </Project>

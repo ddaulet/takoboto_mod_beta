@@ -15,9 +15,13 @@
 !/tools/shot.ps1
 !/tools/runshot.ps1
 !/tools/drive.ps1
+!/tools/get-data.ps1
+!/tools/assets/
 
-# --- portable-src: no build output, and NOTHING that belongs to the author of Takoboto ---
+# --- portable-src: no build output (the engine in lib\, the flags/logos in Assets\ and the icon ARE included) ---
 /portable-src/bin/
 /portable-src/obj/
-/portable-src/Assets/*
-/portable-src/app.ico
+
+# takoboto.dat (the dictionary, 107 MB) is above GitHub's 100 MB file limit: it is a Release download (tools\get-data.ps1).
+# Keep it out of git (the top-level /* rule already does; this is a second safety net).
+*.dat

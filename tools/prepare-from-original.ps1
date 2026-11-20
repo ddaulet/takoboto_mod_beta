@@ -1,8 +1,6 @@
-# Prepares the project for building using YOUR OWN copy of the original Takoboto installer.
-#
-# The dictionary engine (Takoboto.Database.dll), the dictionary data (takoboto.dat) and the artwork (flags,
-# mascot) belong to the author of Takoboto and are therefore NOT part of this repository. This script takes them
-# from the installer you already have and puts them where the build expects them:
+# OPTIONAL: (re)creates the engine, the dictionary and the artwork from YOUR OWN copy of the original Takoboto installer.
+# The repository already contains the engine (portable-src\lib) and the artwork (portable-src\Assets, app.ico); the
+# dictionary comes from tools\get-data.ps1. Use this script only if you want to rebuild them from the original installer:
 #
 #   extracted\app\Takoboto.Database.dll            engine
 #   extracted\app\Takoboto.Database\takoboto.dat   dictionary
@@ -49,6 +47,10 @@ try {
               "Assets\FlagDe.png", "Assets\FlagRu.png", "Assets\Kanji\A.png", "Assets\takoboto_620x300.png")
     foreach ($n in $need) { if (-not (Test-Path (Join-Path $app $n))) { throw "Not found in the installer: $n (is this the original Takoboto package?)" } }
     Write-Host "  engine and dictionary: ok"
+    New-Item -ItemType Directory -Force (Join-Path $Root "portable-src\lib") | Out-Null
+    Copy-Item (Join-Path $app "Takoboto.Database.dll") (Join-Path $Root "portable-src\lib\Takoboto.Database.dll") -Force
+    New-Item -ItemType Directory -Force (Join-Path $Root "data") | Out-Null
+    Copy-Item (Join-Path $app "Takoboto.Database\takoboto.dat") (Join-Path $Root "data\takoboto.dat") -Force
 
     Step "2/3 artwork: flags, radical glyph"
     New-Item -ItemType Directory -Force $assets | Out-Null

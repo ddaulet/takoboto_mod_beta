@@ -30,7 +30,10 @@ Step "2/5 assemble the package"
 if (Test-Path $pkg) { Remove-Item $pkg -Recurse -Force }
 New-Item -ItemType Directory -Force (Join-Path $pkg "data") | Out-Null
 foreach ($f in "Takoboto.exe", "Takoboto.exe.config", "Takoboto.Database.dll") { Copy-Item (Join-Path $stage $f) $pkg }
-Copy-Item (Join-Path $Root "extracted\app\Takoboto.Database\takoboto.dat") (Join-Path $pkg "data\takoboto.dat")
+# the dictionary (107 MB: too big for git, it is a Release download): data\takoboto.dat, or the copy from the original installer
+$dat = @((Join-Path $Root "data\takoboto.dat"), (Join-Path $Root "extracted\app\Takoboto.Database\takoboto.dat"), (Join-Path $out "data\takoboto.dat")) | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $dat) { throw "The dictionary (takoboto.dat) was not found. Run  tools\get-data.ps1  first (it downloads it from the GitHub release)." }
+Copy-Item $dat (Join-Path $pkg "data\takoboto.dat")
 
 $readme = @'
 TAKOBOTO - portable edition
