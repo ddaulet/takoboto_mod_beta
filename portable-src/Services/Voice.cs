@@ -38,6 +38,7 @@ namespace TakobotoApp
             new VoiceInfo("male", "Male (plain)", "VOICEVOX Nemo", "n0.vvm", 10001),
             new VoiceInfo("samurai", "Samurai (rough man)", "VOICEVOX:青山龍星", "15.vvm", 13),
             new VoiceInfo("hero", "Anime hero (young man)", "VOICEVOX:玄野武宏", "4.vvm", 11),
+            new VoiceInfo("kawaii", "Kawaii (bright anime girl)", "VOICEVOX:ずんだもん", "0.vvm", 1),
         };
 
         /// <summary>The voices that can be used now.</summary>
