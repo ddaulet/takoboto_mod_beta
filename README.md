@@ -11,6 +11,7 @@ It is a new user interface on top of the original Takoboto dictionary engine.
 - Instant search: Japanese (kanji, kana, romaji) and English / French / German / Russian; conjugated verbs and adjectives are recognised; matches are highlighted
 - A word opens in tabs: **Overview** (writings, reading, meanings with language flags, example phrases) | **Forms** (conjugations) | **Kanji** (readings, meanings, stroke-order diagrams)
 - Search as you type: romaji typed letter by letter (`nih` already lists にほ…), kanji mixed with Latin letters (`食b` → 食べ…), and a result list that keeps loading as you scroll (no 32-result cap)
+- Example phrases: every phrase the dictionary has for a word is shown right in the card (no button), loading as you scroll; all of it is offline, taken from the dictionary file
 - All text in the word card is selectable; click a word of an example phrase (or select any word) to get a small pop-up with its reading and meaning, click the pop-up to open the entry
 - Find kanji by radicals
 - History, favorites and your own lists
@@ -32,9 +33,10 @@ Everything the program needs, except one big file:
 - the dictionary itself, `takoboto.dat` (107 MB), is above GitHub's 100 MB file limit, so it is **not in git** but in the
   release (inside `Takoboto-Portable.zip`); `tools\get-data.ps1` fetches it for you.
 
-The engine, the dictionary data and the artwork are the work of the author of Takoboto (the dictionary content comes from
-JMdict, KANJIDIC, KanjiVG and Tatoeba, see Credits). They are included only so that this unofficial mod works out of the box;
-if the author asks for them to be removed, they will be.
+The dictionary *content* is not the app author's work either: it comes from JMdict / EDICT / KANJIDIC (EDRDG), KanjiVG and
+Tatoeba, which are published under open (Creative Commons) licences and are credited in the Credits below and on the
+program's About page. The engine `Takoboto.Database.dll`, the compiled `takoboto.dat` and the mascot artwork come from the
+original Takoboto app.
 
 ## Build
 
@@ -92,5 +94,6 @@ Takoboto data and are used under their own licences.
 **Что в репозитории:** всё необходимое, кроме одного большого файла: исходники программы, оригинальный словарный
 движок (`portable-src/lib`), флаги и рисунки (`portable-src/Assets`). Сам словарь `takoboto.dat` (107 МБ) больше лимита
 GitHub в 100 МБ на файл, поэтому лежит не в git, а в релизе (внутри `Takoboto-Portable.zip`); `tools\get-data.ps1`
-скачивает его сам. Движок, данные словаря и рисунки - работа автора Takoboto; они включены только чтобы эта
-неофициальная модификация работала сразу, и будут удалены, если автор попросит. Сборка из исходников: команды выше.
+скачивает его сам. Содержимое словаря - не работа автора приложения: это JMdict / EDICT / KANJIDIC (EDRDG), KanjiVG и
+Tatoeba под открытыми лицензиями Creative Commons; они указаны в разделе Credits и на странице About программы.
+Движок, собранный файл `takoboto.dat` и маскот взяты из оригинального Takoboto. Сборка из исходников: команды выше.

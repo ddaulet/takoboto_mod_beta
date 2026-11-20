@@ -427,6 +427,12 @@ namespace TakobotoApp
         }
 
         // ---- phrases -----------------------------------------------------------------------------------------------
+        // The example phrases come from the dictionary file itself (Tatoeba sentences inside takoboto.dat) - nothing is
+        // fetched from the internet. The few "recommended" ones are shown at once; all the others are looked up in the
+        // background right away (no button) and added as you scroll down, PhraseBatch at a time, so that a word with
+        // hundreds of phrases does not freeze the window.
+        const int PhraseBatch = 25;
+
         UIElement BuildPhrases(Word w)
         {
             var outer = new StackPanel();
@@ -436,28 +442,59 @@ namespace TakobotoApp
             foreach (var s in recommended) stack.Children.Add(SentenceBlock(s));
 
             var moreHost = new StackPanel();
-            var btn = new Button { Style = (Style)FindResource("LinkButton"), Content = "Search phrases", HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, recommended.Count > 0 ? 4 : 0, 0, 0) };
-            stack.Children.Add(btn);
+            var status = Ui.Text("Looking for more phrases…", 13, "FgMuted", null, new Thickness(0, 6, 0, 0));
             stack.Children.Add(moreHost);
-            btn.Click += async (s, e) =>
+            stack.Children.Add(status);
+            outer.Children.Add(Ui.Card(stack));
+
+            int my = token;
+            var pending = new List<Sentence>();
+            int next = 0;
+            bool loaded = false;
+            ScrollChangedEventHandler onScroll = null;
+            Action fill = null;
+
+            // is the end of the list within ~700 px of the visible area?
+            Func<bool> nearEnd = () =>
             {
-                int my = token;
-                btn.IsEnabled = false;
-                btn.Content = "Searching…";
+                if (!moreHost.IsVisible || scroll.ViewportHeight <= 0) return false;
+                try { return moreHost.TransformToAncestor(scroll).Transform(new Point(0, moreHost.ActualHeight)).Y < scroll.ViewportHeight + 700; }
+                catch (InvalidOperationException) { return false; }
+            };
+
+            fill = () =>
+            {
+                if (my != token) { scroll.ScrollChanged -= onScroll; return; }
+                if (!loaded) return;
+                while (next < pending.Count && nearEnd())
+                {
+                    for (int i = 0; i < PhraseBatch && next < pending.Count; i++) moreHost.Children.Add(SentenceBlock(pending[next++]));
+                    moreHost.UpdateLayout();
+                }
+                if (next >= pending.Count) status.Visibility = Visibility.Collapsed;
+                else { status.Visibility = Visibility.Visible; status.Text = "Showing " + (recommended.Count + next) + " of " + (recommended.Count + pending.Count) + " phrases - the rest loads as you scroll"; }
+            };
+            onScroll = (s, e) => fill();
+            scroll.ScrollChanged += onScroll;
+            moreHost.IsVisibleChanged += (s, e) => { if (moreHost.IsVisible) Dispatcher.BeginInvoke(fill, System.Windows.Threading.DispatcherPriority.Loaded); };
+
+            Func<Task> load = async () =>
+            {
                 List<Sentence> found = null;
                 try { found = await Task.Run(() => Engine.MoreSentences(w)); } catch (Exception ex) { App.Log(ex); }
                 if (my != token) return;
                 var known = new HashSet<string>(recommended.Select(r => r.MainText));
-                var fresh = (found ?? new List<Sentence>()).Where(x => !known.Contains(x.MainText)).ToList();
-                if (fresh.Count == 0) btn.Content = "No more phrases found";
-                else
+                pending.AddRange((found ?? new List<Sentence>()).Where(x => !known.Contains(x.MainText)));
+                loaded = true;
+                if (pending.Count == 0)
                 {
-                    btn.Visibility = Visibility.Collapsed;
-                    moreHost.Children.Add(Ui.Title(fresh.Count + " more phrases"));
-                    foreach (var x in fresh) moreHost.Children.Add(SentenceBlock(x));
+                    if (recommended.Count == 0) status.Text = "No example phrases for this word.";
+                    else status.Visibility = Visibility.Collapsed;
+                    return;
                 }
+                fill();
             };
-            outer.Children.Add(Ui.Card(stack));
+            var ignore = load();   // runs in the background; errors are logged inside
             return outer;
         }
 

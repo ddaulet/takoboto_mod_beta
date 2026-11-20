@@ -55,6 +55,7 @@ Needs Microsoft .NET Framework 4.8, which is already part of Windows 10 (1903 or
 A word opens in tabs: Overview (writing, reading, meanings, phrases) | Forms | Kanji.
 Search works while you type: "nih" already finds the words starting with に-, "食b" finds 食べ...; the list keeps
 loading more words as you scroll down.
+Every example phrase the dictionary has for a word is shown in the card (more load as you scroll); all offline.
 All text in the word card can be selected and copied. Click a word of an example phrase (dotted underline), or
 select a word, and a small preview (reading + meaning) pops up; click the preview to open that entry.
 Keys:  Ctrl+F or Ctrl+1 search   Ctrl+2 history   Ctrl+3 favorites   Ctrl+4 my lists   Ctrl+5 kanji by radicals
@@ -81,6 +82,7 @@ TAKOBOTO - портативная версия
 
 Слово открывается во вкладках: Overview (написание, чтение, значения, примеры) | Forms (формы) | Kanji (кандзи).
 Поиск работает по мере набора: "nih" сразу находит слова на に-, "食b" находит 食べ...; список подгружается при прокрутке вниз.
+Все примеры, которые есть в словаре для слова, показаны прямо в карточке (остальные подгружаются при прокрутке), всё без интернета.
 Любой текст в карточке слова можно выделить и скопировать. Нажмите на слово в примере (оно подчёркнуто точками)
 или выделите слово - появится маленькая подсказка (чтение и значение); клик по подсказке открывает статью.
 Клавиши: Ctrl+F или Ctrl+1 поиск, Ctrl+2 история, Ctrl+3 избранное, Ctrl+4 мои списки, Ctrl+5 кандзи по радикалам.

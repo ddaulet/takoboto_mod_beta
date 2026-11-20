@@ -1,7 +1,7 @@
 # Drives the portable app through Windows UI Automation (the same interface screen readers use) to test real clicks.
 #   powershell -File drive.ps1 -Steps "click:Favorites;shot:fav.png;click:Settings;..." [-AppArgs "--theme light"]
 # Step kinds:  click:<Name>   type:<Name>=<text>   wait:<ms>   shot:<file>   popup:<file> (smallest window)   select:<n>  (n-th list row)
-#              sel (print the selected text of every text block)   scrollend (scroll the first list to its end)   drag:x1,y1,x2,y2 (mouse drag, window coordinates)
+#              cardscroll:<percent> (scroll the word card)   scrollinfo (position of every scrollable area)   sel (print the selected text of every text block)   scrollend (scroll the first list to its end)   drag:x1,y1,x2,y2 (mouse drag, window coordinates)
 param(
     [Parameter(Mandatory)] [string]$Steps,
     [string]$AppArgs = "",
@@ -85,6 +85,25 @@ try {
                 [void][Mc]::SetCursorPos([int]($b.X + $b.Width / 2 + $ox), [int]($b.Y + $b.Height / 2 + $oy)); Start-Sleep -Milliseconds 300
                 [Mc]::mouse_event(2, 0, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 80; [Mc]::mouse_event(4, 0, 0, 0, [IntPtr]::Zero)
                 Start-Sleep -Milliseconds 900
+            }
+            "scrollinfo" {
+                $all = $win.FindAll("Descendants", [System.Windows.Automation.Condition]::TrueCondition)
+                foreach ($e in $all) {
+                    $sp = $null
+                    if ($e.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref]$sp) -and $sp.Current.VerticallyScrollable) {
+                        "scroll: {0} '{1}' at {2:N1}% (view {3:N1}% of the content)" -f $e.Current.ControlType.ProgrammaticName, $e.Current.Name, $sp.Current.VerticalScrollPercent, $sp.Current.VerticalViewSize
+                    }
+                }
+            }
+            "cardscroll" {
+                # scroll the word card (the scrollable area that is NOT the result list) to <arg> percent
+                $all = $win.FindAll("Descendants", [System.Windows.Automation.Condition]::TrueCondition)
+                foreach ($e in $all) {
+                    if ($e.Current.ControlType -eq [System.Windows.Automation.ControlType]::List) { continue }
+                    $sp = $null
+                    if ($e.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref]$sp) -and $sp.Current.VerticallyScrollable) { $sp.SetScrollPercent(-1, [double]$arg); break }
+                }
+                Start-Sleep -Milliseconds 1200
             }
             "scrollend" {
                 $lst = $win.FindFirst("Descendants", (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::List)))

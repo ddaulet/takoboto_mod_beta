@@ -198,13 +198,15 @@ namespace TakobotoApp
             return list;
         }
 
-        public static List<Sentence> MoreSentences(Word w)
+        /// <summary>The example phrases of a word beyond the few recommended ones. The original app asked for 64; a common
+        /// word has several hundred (食べる 770, 日本 1154) and they load in well under a second, so ask for up to 1000.</summary>
+        public static List<Sentence> MoreSentences(Word w, int max = 1000)
         {
             var list = new List<Sentence>();
             lock (Gate)
             {
                 var s = db.PrepareSentencesSearch(w, list);
-                db.SearchOtherSentences(s, 64, Options);
+                db.SearchOtherSentences(s, max, Options);
             }
             return list;
         }
