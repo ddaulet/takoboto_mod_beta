@@ -432,7 +432,7 @@
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="ListBoxItem">
-          <Border x:Name="Bd" Background="Transparent" Padding="16,6,12,6" BorderThickness="3,0,0,0" BorderBrush="Transparent">
+          <Border x:Name="Bd" Background="Transparent" Padding="16,4,12,4" BorderThickness="3,0,0,0" BorderBrush="Transparent">
             <ContentPresenter/>
           </Border>
           <ControlTemplate.Triggers>

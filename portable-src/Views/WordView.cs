@@ -315,6 +315,15 @@ namespace TakobotoApp
         static readonly DbLanguage[] ColumnOrder = { DbLanguage.English, DbLanguage.French, DbLanguage.German, DbLanguage.Russian };
         static readonly Typeface MeaningFont = new Typeface(new FontFamily("Segoe UI, Yu Gothic UI, Meiryo UI"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
 
+        /// <summary>A thin, quiet horizontal line: it separates the entries of one language (use / service / role are three
+        /// entries, not one text in three rows).</summary>
+        static UIElement Hairline()
+        {
+            var line = new Border { Height = 1, Margin = new Thickness(0, 3, 0, 3), Opacity = 0.85, IsHitTestVisible = false };
+            line.SetResourceReference(Border.BackgroundProperty, "Line");
+            return line;
+        }
+
         /// <summary>Width in pixels of the widest line of a language (or of its longest word), bold 16 px as it is drawn.</summary>
         const double TextBoxSlack = 20;   // a text box wraps a few pixels earlier than the bare text width
 
@@ -346,7 +355,10 @@ namespace TakobotoApp
                 cell.Children.Add(flag);
                 var texts = new StackPanel();
                 foreach (var l in group)
+                {
+                    if (texts.Children.Count > 0) texts.Children.Add(Hairline());   // a thin line between the separate entries of a language
                     texts.Children.Add(Ui.SText(l.Text, 16, l.Primary ? "Fg" : "FgMuted", l.Primary ? FontWeights.SemiBold : FontWeights.Normal, new Thickness(0, 1, 0, 1)));
+                }
                 Grid.SetColumn(texts, 1);
                 cell.Children.Add(texts);
                 // the narrowest this column may get: the flag and its longest word
@@ -379,6 +391,7 @@ namespace TakobotoApp
                 var texts = new StackPanel();
                 foreach (var l in group)
                 {
+                    if (texts.Children.Count > 0) texts.Children.Add(Hairline());
                     var t = meaning
                         ? Ui.SText(l.Text, fontSize, l.Primary ? "Fg" : "FgMuted", l.Primary ? FontWeights.SemiBold : FontWeights.Normal, new Thickness(0, 1, 0, 1))
                         : Ui.SText(l.Text, fontSize, "FgMuted", null, new Thickness(0, 1, 0, 1));
