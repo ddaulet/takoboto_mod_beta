@@ -432,7 +432,7 @@
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="ListBoxItem">
-          <Border x:Name="Bd" Background="Transparent" Padding="16,11,12,11" BorderThickness="3,0,0,0" BorderBrush="Transparent">
+          <Border x:Name="Bd" Background="Transparent" Padding="16,6,12,6" BorderThickness="3,0,0,0" BorderBrush="Transparent">
             <ContentPresenter/>
           </Border>
           <ControlTemplate.Triggers>
@@ -458,7 +458,7 @@
           <local:MarkedText Raw="{Binding Reading}" Mark="{Binding Mark}" FontSize="16" FontFamily="{StaticResource JpFont}" Foreground="{DynamicResource FgMuted}" VerticalAlignment="Bottom" Margin="0,0,0,3"/>
         </WrapPanel>
         <TextBlock Text="{Binding Others}" Visibility="{Binding OthersVis}" FontSize="13.5" FontFamily="{StaticResource JpFont}" Foreground="{DynamicResource FgFaint}" TextWrapping="Wrap" Margin="0,1,0,0"/>
-        <local:MarkedText Raw="{Binding Meaning}" Mark="{Binding Mark}" FontSize="14.5" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" LineStackingStrategy="BlockLineHeight" LineHeight="20" Margin="0,5,0,0" MaxHeight="60"/>
+        <local:MarkedText Raw="{Binding Meaning}" Mark="{Binding Mark}" FontSize="14.5" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" LineStackingStrategy="BlockLineHeight" LineHeight="19" Margin="0,2,0,0" MaxHeight="57"/>
         <TextBlock Text="{Binding Conjugation}" Visibility="{Binding ConjugationVis}" FontSize="13" Foreground="{DynamicResource FgMuted}" TextWrapping="Wrap" Margin="0,4,0,0"/>
       </StackPanel>
       <Button Grid.Column="1" Style="{StaticResource IconButton}" Content="&#xE711;" Tag="{Binding}" ToolTip="Remove from list" AutomationProperties.Name="Remove from list" Visibility="{Binding RemoveVis}" VerticalAlignment="Top" Width="30" Height="30" FontSize="12"/>

@@ -10,6 +10,7 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Takoboto.Database;
+using DbLanguage = Takoboto.Database.Language;
 
 namespace TakobotoApp
 {
@@ -287,7 +288,7 @@ namespace TakobotoApp
         {
             var stack = new StackPanel();
             stack.Children.Add(Ui.Title(w.Meanings.Count > 1 ? "Meanings" : "Meaning"));
-            var flagged = new HashSet<Language>();   // the languages whose flag has been drawn already (once per language)
+
             int n = 0;
             foreach (var m in w.Meanings)
             {
@@ -301,14 +302,59 @@ namespace TakobotoApp
                 var body = new StackPanel();
                 if (m.HasInfos)
                     body.Children.Add(Ui.SText(string.Join("\n", m.Infos.Select(i => i.Text)), 13.5, "FgMuted", null, new Thickness(0, 0, 0, 4)));
-                // only the languages the user wants (all there are, if this meaning has none of them), one flag per language
+                // only the languages the user wants (all there are, if this meaning has none of them), side by side
                 var shown = Langs.Pick(m.Parts, p => p.Language);
-                body.Children.Add(TranslationBlock(shown.Select(p => new TLine { Lang = p.Language, Text = p.Text, Primary = p.IsPrimary }), 18, 16, true, flagged));
+                body.Children.Add(MeaningColumns(shown.Select(p => new TLine { Lang = p.Language, Text = p.Text, Primary = p.IsPrimary })));
                 Grid.SetColumn(body, 1);
                 row.Children.Add(body);
                 stack.Children.Add(row);
             }
             return Ui.Card(stack);
+        }
+
+        static readonly DbLanguage[] ColumnOrder = { DbLanguage.English, DbLanguage.French, DbLanguage.German, DbLanguage.Russian };
+        static readonly Typeface MeaningFont = new Typeface(new FontFamily("Segoe UI, Yu Gothic UI, Meiryo UI"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
+
+        /// <summary>Width in pixels of the widest line of a language (or of its longest word), bold 16 px as it is drawn.</summary>
+        const double TextBoxSlack = 20;   // a text box wraps a few pixels earlier than the bare text width
+
+        static double TextWidth(IEnumerable<string> pieces)
+        {
+            double w = 0;
+            foreach (var t in pieces)
+            {
+                var ft = new FormattedText(t ?? "", System.Globalization.CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, MeaningFont, 16, Brushes.Black, null, TextFormattingMode.Display, 1.0);   // text boxes lay their text out in Display mode (wider than Ideal)
+                w = Math.Max(w, ft.Width);
+            }
+            return w;
+        }
+
+        /// <summary>The translations of ONE meaning in invisible side-by-side columns, always in the order English, French,
+        /// German, Russian (only the languages this meaning has); see <see cref="LangColumns"/> for how the widths are chosen.
+        /// Each language has its flag at the top left of its column and its lines under each other.</summary>
+        static UIElement MeaningColumns(IEnumerable<TLine> lines)
+        {
+            var panel = new LangColumns();
+            foreach (var group in lines.GroupBy(x => x.Lang).OrderBy(g => Array.IndexOf(ColumnOrder, g.Key)))
+            {
+                var cell = new Grid();
+                cell.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                cell.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                var flag = Ui.Flag(group.Key, 16);
+                flag.VerticalAlignment = VerticalAlignment.Top;
+                flag.Margin = new Thickness(0, 4, 8, 0);
+                cell.Children.Add(flag);
+                var texts = new StackPanel();
+                foreach (var l in group)
+                    texts.Children.Add(Ui.SText(l.Text, 16, l.Primary ? "Fg" : "FgMuted", l.Primary ? FontWeights.SemiBold : FontWeights.Normal, new Thickness(0, 1, 0, 1)));
+                Grid.SetColumn(texts, 1);
+                cell.Children.Add(texts);
+                // the narrowest this column may get: the flag and its longest word
+                var words = group.SelectMany(l => (l.Text ?? "").Split(new[] { ' ', '/', ',', ';' }, StringSplitOptions.RemoveEmptyEntries));
+                cell.Tag = new ColumnInfo { Natural = 24 + TextWidth(group.Select(l => l.Text)) + TextBoxSlack, Minimum = 24 + TextWidth(words) + TextBoxSlack };
+                panel.Children.Add(cell);
+            }
+            return panel;
         }
 
         // ---- translations: ONE flag per language, at the top left of that language's lines ---------------------------
@@ -317,9 +363,7 @@ namespace TakobotoApp
         /// <summary>The translations grouped by language (in the order the languages first appear): a flag at the top left
         /// and that language's lines stacked to its right. <paramref name="meaning"/>: the main lines of a meaning are bold,
         /// the others muted; otherwise (example phrases) all lines are muted.</summary>
-        /// <param name="seenFlags">When given (the meanings of a word), a language's flag is drawn only the FIRST time that
-        /// language appears: a word with three English meanings has one English flag, not three. The text keeps its column.</param>
-        static UIElement TranslationBlock(IEnumerable<TLine> lines, double flagSize, double fontSize, bool meaning, HashSet<Language> seenFlags = null)
+        static UIElement TranslationBlock(IEnumerable<TLine> lines, double flagSize, double fontSize, bool meaning)
         {
             var panel = new StackPanel();
             foreach (var group in lines.GroupBy(l => l.Lang))
@@ -327,7 +371,7 @@ namespace TakobotoApp
                 var row = new Grid { Margin = new Thickness(0, panel.Children.Count == 0 ? 0 : 6, 0, 0) };
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                FrameworkElement flag = seenFlags == null || seenFlags.Add(group.Key) ? (FrameworkElement)Ui.Flag(group.Key, flagSize) : new Border { Width = flagSize, Height = 1 };
+                var flag = Ui.Flag(group.Key, flagSize);
                 flag.VerticalAlignment = VerticalAlignment.Top;
                 flag.Margin = new Thickness(0, 3, 10, 0);
                 row.Children.Add(flag);

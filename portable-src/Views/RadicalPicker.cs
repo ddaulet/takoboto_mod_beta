@@ -12,9 +12,9 @@ using Takoboto.Database.Impl;
 namespace TakobotoApp
 {
     /// <summary>"Search by radical" (the puzzle button of the search page). It fills the whole results area:
-    ///   top    - the kanji that contain all the chosen radicals (click a kanji to CHOOSE it),
-    ///   middle - the radicals, by stroke count,
-    ///   bottom - the chosen kanji, a backspace button and DONE (DONE puts the chosen kanji into the search box).
+    ///   top    - the chosen kanji, a backspace button and DONE (DONE puts the chosen kanji into the search box),
+    ///   then   - the picked radicals and the kanji that contain all of them (click a kanji to CHOOSE it),
+    ///   below  - the radicals, by stroke count.
     /// Same logic as the original app: the selected radicals' kanji lists are intersected; radicals that would give an
     /// empty result are disabled.</summary>
     public class RadicalPicker : UserControl
@@ -45,12 +45,12 @@ namespace TakobotoApp
         public RadicalPicker()
         {
             var root = new Grid();
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(2, GridUnitType.Star), MinHeight = 120 });
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(3, GridUnitType.Star), MinHeight = 140 });
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });                                          // chosen kanji | backspace | DONE
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });                                          // the picked radicals | Clear
+            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(2, GridUnitType.Star), MinHeight = 120 });    // the kanji
+            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(3, GridUnitType.Star), MinHeight = 140 });    // the radicals
 
-            // row 0: what is selected
+            // row 1: the picked radicals
             var top = new Grid { Margin = new Thickness(16, 10, 16, 4) };
             top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -63,9 +63,10 @@ namespace TakobotoApp
             clearBtn.Click += (s, e) => ClearSelection();
             Grid.SetColumn(clearBtn, 1);
             top.Children.Add(clearBtn);
+            Grid.SetRow(top, 1);
             root.Children.Add(top);
 
-            // row 1: the kanji that contain the chosen radicals (on top, as in Pleco)
+            // row 2: the kanji that contain the chosen radicals
             var results = new Grid { Margin = new Thickness(16, 0, 10, 0) };
             results.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             results.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
@@ -74,18 +75,18 @@ namespace TakobotoApp
             var kanjiScroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = kanjiPanel };
             Grid.SetRow(kanjiScroll, 1);
             results.Children.Add(kanjiScroll);
-            Grid.SetRow(results, 1);
+            Grid.SetRow(results, 2);
             root.Children.Add(results);
 
-            // row 2: the radicals
+            // row 3: the radicals
             var radicalBorder = new Border { BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(16, 2, 10, 0) };
             radicalBorder.SetResourceReference(Border.BorderBrushProperty, "Line");
             radicalBorder.Child = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = BuildRadicals() };
-            Grid.SetRow(radicalBorder, 2);
+            Grid.SetRow(radicalBorder, 3);
             root.Children.Add(radicalBorder);
 
-            // row 3: chosen kanji | backspace | DONE
-            var bar = new Border { BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(12, 8, 12, 8) };
+            // row 0 (right under the mode buttons): chosen kanji | backspace | DONE
+            var bar = new Border { BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(12, 8, 12, 8) };
             bar.SetResourceReference(Border.BorderBrushProperty, "Line");
             var barGrid = new Grid();
             barGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -106,7 +107,7 @@ namespace TakobotoApp
             Grid.SetColumn(done, 2);
             barGrid.Children.Add(done);
             bar.Child = barGrid;
-            Grid.SetRow(bar, 3);
+            Grid.SetRow(bar, 0);
             root.Children.Add(bar);
 
             Content = root;
