@@ -10,8 +10,7 @@ namespace TakobotoApp
     public class AppSettings
     {
         public string Theme = "dark";            // system | light | dark  (dark on first start)
-        public string InputLayout = "abc";       // on-screen keyboard / what the real keyboard types: abc | hira | kata
-        public bool KeyboardOpen = true;         // the keys of the on-screen keyboard are shown
+        public string InputLayout = "hira";      // kana keyboard (and what the real keyboard types in the keyboard mode): hira | kata
         public string Scheme = "green";          // colour scheme: green | red | blue | yellow (see Schemes)
         public bool English = true;              // translation languages that are shown (see Langs); French/German/Russian are also searched
         public bool French = true;

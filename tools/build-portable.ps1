@@ -52,8 +52,9 @@ Files
 
 Needs Microsoft .NET Framework 4.8, which is already part of Windows 10 (1903 or newer) and Windows 11.
 
-Under the search box: handwriting / radicals / keyboard / voice / photo (handwriting, voice, photo are placeholders).
-The keyboard has ABC, hiragana and katakana layouts; in the kana layouts your keyboard types romaji and kana come out.
+Under the search box: handwriting / radicals / keyboard / voice / photo (handwriting, voice, photo are placeholders). No mode is on at
+first; press a button to open it, press it again to close it. Radicals: pick radicals, click a kanji, press DONE.
+The keyboard mode has hiragana and katakana keys (with small kana); while it is open your keyboard types romaji and kana come out.
 A word opens in tabs: Overview (writing, reading, meanings, phrases) | Forms | Kanji.
 Search works while you type: "nih" already finds the words starting with に-, "食b" finds 食べ...; the list keeps
 loading more words as you scroll down.
@@ -83,8 +84,9 @@ TAKOBOTO - портативная версия
 
 Нужен Microsoft .NET Framework 4.8 - он уже входит в Windows 10 (1903 и новее) и Windows 11.
 
-Под строкой поиска: рукописный ввод / радикалы / клавиатура / голос / фото (рукописный ввод, голос и фото - заглушки).
-У клавиатуры раскладки ABC, хирагана и катакана; в японских раскладках ваша клавиатура печатает ромадзи, а получается кана.
+Под строкой поиска: рукописный ввод / радикалы / клавиатура / голос / фото (рукописный ввод, голос и фото - заглушки). Сначала ни один режим
+не включён; нажмите кнопку, чтобы открыть, нажмите ещё раз, чтобы закрыть. Радикалы: выберите радикалы, нажмите на кандзи, затем DONE.
+У режима клавиатуры клавиши хираганы и катаканы (с маленькой каной); пока он открыт, ваша клавиатура печатает ромадзи, а получается кана.
 Слово открывается во вкладках: Overview (написание, чтение, значения, примеры) | Forms (формы) | Kanji (кандзи).
 Поиск работает по мере набора: "nih" сразу находит слова на に-, "食b" находит 食べ...; список подгружается при прокрутке вниз.
 Все примеры, которые есть в словаре для слова, показаны прямо в карточке (остальные подгружаются при прокрутке), всё без интернета.

@@ -133,6 +133,7 @@ namespace TakobotoApp
                 else if (a == "--scroll" && v != null) { i++; double d; if (double.TryParse(v, out d)) WordView.TestScroll = d; }
                 else if (a == "--word-test" && v != null) { i++; WordTest(v); }
                 else if (a == "--layout" && v != null) { i++; search.TestLayout(v); }
+                else if (a == "--mode-clicks" && v != null) { i++; search.TestModeClicks(v.Split(',')); }
                 else if (a == "--type" && v != null) { i++; TypeTest(v); }
                 else if (a == "--page" && v != null)
                 {

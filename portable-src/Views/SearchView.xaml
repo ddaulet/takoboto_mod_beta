@@ -32,15 +32,15 @@
       <Border Grid.Row="1" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1">
         <UniformGrid Columns="5" Margin="10,0">
           <Button x:Name="ModeBrush" Style="{StaticResource ModeTabDummy}" Tag="&#xEDC6;" ToolTip="Handwriting - coming later" AutomationProperties.Name="Handwriting (coming later)" Click="Dummy_Click"/>
-          <RadioButton x:Name="ModeRadicals" Style="{StaticResource ModeTab}" Tag="&#xEA86;" GroupName="searchmode" ToolTip="Search by radical (Ctrl+5)" AutomationProperties.Name="Search by radical" Checked="Mode_Checked" Click="Mode_Click"/>
-          <RadioButton x:Name="ModeKeyboard" Style="{StaticResource ModeTab}" Tag="&#xE765;" GroupName="searchmode" IsChecked="True" ToolTip="Keyboard" AutomationProperties.Name="Keyboard" Checked="Mode_Checked" Click="Mode_Click"/>
+          <RadioButton x:Name="ModeRadicals" Style="{StaticResource ModeTab}" Tag="&#xEA86;" GroupName="searchmode" ToolTip="Search by radical (Ctrl+5) - click again to close" AutomationProperties.Name="Search by radical" Checked="Mode_Changed" Unchecked="Mode_Changed" Click="Mode_Click"/>
+          <RadioButton x:Name="ModeKeyboard" Style="{StaticResource ModeTab}" Tag="&#xE765;" GroupName="searchmode" ToolTip="Japanese keyboard: kana keys, and your own keyboard types romaji → kana - click again to close" AutomationProperties.Name="Keyboard" Checked="Mode_Changed" Unchecked="Mode_Changed" Click="Mode_Click"/>
           <Button x:Name="ModeVoice" Style="{StaticResource ModeTabDummy}" Tag="&#xE720;" ToolTip="Voice - coming later" AutomationProperties.Name="Voice (coming later)" Click="Dummy_Click"/>
           <Button x:Name="ModePhoto" Style="{StaticResource ModeTabDummy}" Tag="&#xE722;" ToolTip="Photo - coming later" AutomationProperties.Name="Photo (coming later)" Click="Dummy_Click"/>
         </UniformGrid>
       </Border>
 
-      <!-- the panel of the active mode (on-screen keyboard / radicals) -->
-      <Border x:Name="PanelBorder" Grid.Row="2" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="14,10,14,8">
+      <!-- the panel of the keyboard mode (kana keys) -->
+      <Border x:Name="PanelBorder" Grid.Row="2" Visibility="Collapsed" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="14,10,14,8">
         <ContentControl x:Name="PanelHost" Focusable="False"/>
       </Border>
 
@@ -62,6 +62,9 @@
         </StackPanel>
 
         <TextBlock x:Name="NothingFound" Text="Nothing found." Visibility="Collapsed" FontSize="16" Foreground="{DynamicResource FgMuted}" Margin="22,16,20,0" VerticalAlignment="Top"/>
+
+        <!-- radical search: covers the whole results area while that mode is on -->
+        <Border x:Name="RadicalHost" Grid.RowSpan="2" Visibility="Collapsed" Background="{DynamicResource PageBg}"/>
 
         <!-- how many results; more are loaded automatically while you scroll -->
         <Border x:Name="StatusBar" Grid.Row="1" Visibility="Collapsed" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="16,6">

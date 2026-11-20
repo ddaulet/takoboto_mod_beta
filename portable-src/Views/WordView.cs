@@ -287,6 +287,7 @@ namespace TakobotoApp
         {
             var stack = new StackPanel();
             stack.Children.Add(Ui.Title(w.Meanings.Count > 1 ? "Meanings" : "Meaning"));
+            var flagged = new HashSet<Language>();   // the languages whose flag has been drawn already (once per language)
             int n = 0;
             foreach (var m in w.Meanings)
             {
@@ -302,7 +303,7 @@ namespace TakobotoApp
                     body.Children.Add(Ui.SText(string.Join("\n", m.Infos.Select(i => i.Text)), 13.5, "FgMuted", null, new Thickness(0, 0, 0, 4)));
                 // only the languages the user wants (all there are, if this meaning has none of them), one flag per language
                 var shown = Langs.Pick(m.Parts, p => p.Language);
-                body.Children.Add(TranslationBlock(shown.Select(p => new TLine { Lang = p.Language, Text = p.Text, Primary = p.IsPrimary }), 18, 16, true));
+                body.Children.Add(TranslationBlock(shown.Select(p => new TLine { Lang = p.Language, Text = p.Text, Primary = p.IsPrimary }), 18, 16, true, flagged));
                 Grid.SetColumn(body, 1);
                 row.Children.Add(body);
                 stack.Children.Add(row);
@@ -316,7 +317,9 @@ namespace TakobotoApp
         /// <summary>The translations grouped by language (in the order the languages first appear): a flag at the top left
         /// and that language's lines stacked to its right. <paramref name="meaning"/>: the main lines of a meaning are bold,
         /// the others muted; otherwise (example phrases) all lines are muted.</summary>
-        static UIElement TranslationBlock(IEnumerable<TLine> lines, double flagSize, double fontSize, bool meaning)
+        /// <param name="seenFlags">When given (the meanings of a word), a language's flag is drawn only the FIRST time that
+        /// language appears: a word with three English meanings has one English flag, not three. The text keeps its column.</param>
+        static UIElement TranslationBlock(IEnumerable<TLine> lines, double flagSize, double fontSize, bool meaning, HashSet<Language> seenFlags = null)
         {
             var panel = new StackPanel();
             foreach (var group in lines.GroupBy(l => l.Lang))
@@ -324,7 +327,7 @@ namespace TakobotoApp
                 var row = new Grid { Margin = new Thickness(0, panel.Children.Count == 0 ? 0 : 6, 0, 0) };
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                var flag = Ui.Flag(group.Key, flagSize);
+                FrameworkElement flag = seenFlags == null || seenFlags.Add(group.Key) ? (FrameworkElement)Ui.Flag(group.Key, flagSize) : new Border { Width = flagSize, Height = 1 };
                 flag.VerticalAlignment = VerticalAlignment.Top;
                 flag.Margin = new Thickness(0, 3, 10, 0);
                 row.Children.Add(flag);
@@ -463,11 +466,11 @@ namespace TakobotoApp
             var outer = new StackPanel();
             var recommended = w.RecommendedSentences ?? new List<Sentence>();
             var stack = new StackPanel();
-            stack.Children.Add(Ui.Title("Phrases"));
+            stack.Children.Add(Ui.Title("Example sentences"));
             foreach (var s in recommended) stack.Children.Add(SentenceBlock(s));
 
             var moreHost = new StackPanel();
-            var status = Ui.Text("Looking for more phrases…", 13, "FgMuted", null, new Thickness(0, 6, 0, 0));
+            var status = Ui.Text("Looking for example sentences…", 13, "FgMuted", null, new Thickness(0, 6, 0, 0));
             stack.Children.Add(moreHost);
             stack.Children.Add(status);
             outer.Children.Add(Ui.Card(stack));
@@ -496,8 +499,16 @@ namespace TakobotoApp
                     for (int i = 0; i < PhraseBatch && next < pending.Count; i++) moreHost.Children.Add(SentenceBlock(pending[next++]));
                     moreHost.UpdateLayout();
                 }
-                if (next >= pending.Count) status.Visibility = Visibility.Collapsed;
-                else { status.Visibility = Visibility.Visible; status.Text = "Showing " + (recommended.Count + next) + " of " + (recommended.Count + pending.Count) + " phrases - the rest loads as you scroll"; }
+                if (next >= pending.Count)
+                {
+                    if (recommended.Count == 0 && pending.Count == 0)   // nothing at all: say so, so that it is clear the dictionary has none
+                    {
+                        status.Visibility = Visibility.Visible;
+                        status.Text = "No example sentences for this word - the dictionary has none.";
+                    }
+                    else status.Visibility = Visibility.Collapsed;
+                }
+                else { status.Visibility = Visibility.Visible; status.Text = "Showing " + (recommended.Count + next) + " of " + (recommended.Count + pending.Count) + " sentences - the rest loads as you scroll"; }
             };
             onScroll = (s, e) => fill();
             scroll.ScrollChanged += onScroll;
@@ -511,12 +522,6 @@ namespace TakobotoApp
                 var known = new HashSet<string>(recommended.Select(r => r.MainText));
                 pending.AddRange((found ?? new List<Sentence>()).Where(x => !known.Contains(x.MainText)));
                 loaded = true;
-                if (pending.Count == 0)
-                {
-                    if (recommended.Count == 0) status.Text = "No example phrases for this word.";
-                    else status.Visibility = Visibility.Collapsed;
-                    return;
-                }
                 fill();
             };
             var ignore = load();   // runs in the background; errors are logged inside

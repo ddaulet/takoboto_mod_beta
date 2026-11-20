@@ -25,25 +25,27 @@ namespace TakobotoApp
         int pendingSelectId;     // select this word once the next search has filled the list (see OpenWord)
 
         // ---- the five input modes under the search box ------------------------------------------------------------
-        enum Mode { Keyboard, Radicals }
+        // No mode is on at first: the search box is typed into with the keyboard as it is. A click on a mode button switches
+        // it on (its panel appears), a click on the same button again switches it off.
+        enum Mode { None, Keyboard, Radicals }
         InputKeyboard keyboard;
         RadicalPicker picker;
-        Mode mode = Mode.Keyboard;
-        bool radicalsOpen = true;
+        Mode mode = Mode.None;
         int lastModeTick;
 
         public SearchView()
         {
             InitializeComponent();
-            keyboard = new InputKeyboard { Layout = Store.Settings.InputLayout, KeysVisible = Store.Settings.KeyboardOpen };
+            keyboard = new InputKeyboard { Layout = Store.Settings.InputLayout };
             keyboard.TextTyped += t => InsertRaw(t);
             keyboard.BackspaceTyped += () => BackspaceKey();
             keyboard.Modify += kind => ModifyLast(kind);
             keyboard.LayoutChanged += () => { Store.Settings.InputLayout = keyboard.Layout; Store.SaveSettings(); };
-            keyboard.KeysToggled += () => { Store.Settings.KeyboardOpen = keyboard.KeysVisible; Store.SaveSettings(); };
+            PanelHost.Content = keyboard;
             picker = new RadicalPicker();
-            picker.KanjiChosen += k => InsertRaw(k);
-            ShowPanel();
+            picker.Done += text => { InsertRaw(text); CloseModes(); };    // DONE: the chosen kanji go into the search box
+            picker.BackspaceRequested += () => BackspaceKey();
+            RadicalHost.Child = picker;
             List.ItemsSource = items;
             List.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(List_ScrollChanged));
             debounce.Tick += (s, e) => { debounce.Stop(); RunSearch(); };
@@ -59,39 +61,49 @@ namespace TakobotoApp
         public void FocusBox() { Box.Focus(); Box.SelectAll(); }
 
         // ---- modes -------------------------------------------------------------------------------------------------
-        // Checked is what UI Automation / the keyboard raise, Click comes with every mouse click (also on the mode that is
-        // already active, which folds / unfolds its panel). A mouse click raises both: the Click right after Checked is ignored.
-        void Mode_Checked(object sender, RoutedEventArgs e)
+        // Checked / Unchecked are what UI Automation and the keyboard raise, Click comes with every mouse click (also on the
+        // mode that is already on: that click switches it off). A mouse click that switches a mode ON raises Checked and,
+        // a moment later in the same click, Click: that Click is ignored.
+        void Mode_Changed(object sender, RoutedEventArgs e)
         {
             if (keyboard == null) return;   // while the page is being built
-            lastModeTick = Environment.TickCount;
-            mode = sender == ModeRadicals ? Mode.Radicals : Mode.Keyboard;
-            radicalsOpen = true;
+            var m = ModeRadicals.IsChecked == true ? Mode.Radicals : ModeKeyboard.IsChecked == true ? Mode.Keyboard : Mode.None;
+            if (m != Mode.None && m != mode) lastModeTick = Environment.TickCount;
+            mode = m;
             ShowPanel();
         }
 
         void Mode_Click(object sender, RoutedEventArgs e)
         {
-            if (Environment.TickCount - lastModeTick < 300) return;
-            if (mode == Mode.Keyboard) keyboard.KeysVisible = !keyboard.KeysVisible;   // the layout strip stays
-            else { radicalsOpen = !radicalsOpen; ShowPanel(); }
+            if (Environment.TickCount - lastModeTick < 50) return;   // the Click of the click that just switched this mode on
+            ((RadioButton)sender).IsChecked = false;                  // pressed again: switch it off
         }
 
         void Dummy_Click(object sender, RoutedEventArgs e) { }   // handwriting, voice and photo: placeholders for now
 
         void ShowPanel()
         {
-            PanelHost.Content = mode == Mode.Keyboard ? (UIElement)keyboard : picker;
-            PanelBorder.Visibility = mode == Mode.Keyboard || radicalsOpen ? Visibility.Visible : Visibility.Collapsed;
+            PanelBorder.Visibility = mode == Mode.Keyboard ? Visibility.Visible : Visibility.Collapsed;
+            RadicalHost.Visibility = mode == Mode.Radicals ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        /// <summary>Switch to the radicals (puzzle) mode, or just open its panel when it is already active.</summary>
+        /// <summary>Switch every mode off (the box is typed into with the keyboard as it is).</summary>
+        public void CloseModes()
+        {
+            ModeKeyboard.IsChecked = false;
+            ModeRadicals.IsChecked = false;
+            Box.Focus();
+        }
+
+        /// <summary>Switch to the radicals (puzzle) mode.</summary>
         public void ShowRadicals(string[] preselect = null)
         {
-            if (mode == Mode.Radicals) { radicalsOpen = true; ShowPanel(); }
-            else ModeRadicals.IsChecked = true;
+            ModeRadicals.IsChecked = true;
             if (preselect != null) picker.Preselect(preselect);
         }
+
+        // in the keyboard mode the real keyboard types romaji and kana come out
+        bool KanaTyping { get { return mode == Mode.Keyboard; } }
 
         // ---- typing -------------------------------------------------------------------------------------------------
         /// <summary>Put text into the search box at the caret (the on-screen keyboard and the kanji of the radical search).</summary>
@@ -129,7 +141,7 @@ namespace TakobotoApp
         /// (k, sh, n) stays as letters until it is complete.</summary>
         void Box_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            if (keyboard.Layout == "abc") return;
+            if (!KanaTyping) return;
             if (e.Text.Length != 1 || !Kana.IsRomajiChar(e.Text[0])) return;
             e.Handled = true;
             TypeRomaji(e.Text[0]);
@@ -178,14 +190,33 @@ namespace TakobotoApp
         public void TypeFromAnywhere(string text)
         {
             if (!Box.IsKeyboardFocusWithin) { Box.Focus(); if (Box.Text.Length > 0) Box.SelectAll(); }
-            if (keyboard.Layout != "abc" && text.Length == 1 && Kana.IsRomajiChar(text[0])) TypeRomaji(text[0]);
+            if (KanaTyping && text.Length == 1 && Kana.IsRomajiChar(text[0])) TypeRomaji(text[0]);
             else InsertRaw(text);
         }
 
         public void BackspaceFromAnywhere() { BackspaceKey(); }
 
-        /// <summary>For automated tests (--layout abc|hira|kata): set the keyboard layout without saving it.</summary>
-        public void TestLayout(string layout) { keyboard.Layout = layout; }
+        /// <summary>For automated tests (--mode-clicks keyboard,keyboard): press the mode buttons like a mouse click does
+        /// (the real OnClick of the button), one every 2 s, so that "pressed again switches it off" can be tested.</summary>
+        public void TestModeClicks(string[] names)
+        {
+            var queue = new System.Collections.Generic.Queue<string>(names);
+            var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(2000) };
+            t.Tick += (s, e) =>
+            {
+                if (queue.Count == 0) { t.Stop(); return; }
+                var rb = queue.Dequeue() == "radicals" ? ModeRadicals : ModeKeyboard;
+                typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Invoke(rb, null);
+            };
+            t.Start();
+        }
+
+        /// <summary>For automated tests (--layout hira|kata|off): switch the keyboard mode on with that layout (or off), without saving.</summary>
+        public void TestLayout(string layout)
+        {
+            if (layout == "hira" || layout == "kata") { keyboard.Layout = layout; ModeKeyboard.IsChecked = true; }
+            else CloseModes();
+        }
 
         public void SetQuery(string text)
         {
@@ -326,7 +357,7 @@ namespace TakobotoApp
 
         void Box_KeyDown(object sender, KeyEventArgs e)
         {
-            if ((e.Key == Key.Enter || e.Key == Key.Space) && keyboard.Layout != "abc") CommitPendingN();
+            if ((e.Key == Key.Enter || e.Key == Key.Space) && KanaTyping) CommitPendingN();
             if (e.Key == Key.Escape) { Box.Text = ""; e.Handled = true; }
             else if (e.Key == Key.Down && items.Count > 0)
             {

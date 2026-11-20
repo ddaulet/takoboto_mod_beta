@@ -11,16 +11,17 @@ It is a new user interface on top of the original Takoboto dictionary engine.
 - Instant search: Japanese (kanji, kana, romaji) and English / French / German / Russian; conjugated verbs and adjectives are recognised; matches are highlighted
 - A word opens in tabs: **Overview** (writings, reading, meanings with language flags, example phrases) | **Forms** (conjugations) | **Kanji** (readings, meanings, stroke-order diagrams)
 - Search as you type: romaji typed letter by letter (`nih` already lists にほ…), kanji mixed with Latin letters (`食b` → 食べ…), and a result list that keeps loading as you scroll (no 32-result cap)
-- Example phrases: every phrase the dictionary has for a word is shown right in the card (no button), loading as you scroll; all of it is offline, taken from the dictionary file
+- Example sentences: every sentence the dictionary has for a word is shown right in the card (no button), loading as you scroll; all of it is offline, taken from the dictionary file
 - All text in the word card is selectable; click a word of an example phrase (or select any word) to get a small pop-up with its reading and meaning, click the pop-up to open the entry
-- Five input modes under the search box, like Pleco: handwriting (placeholder, later), **search by radical** (the puzzle button: pick radicals, click a kanji to put it into the search box), **keyboard** (default), voice and photo (placeholders)
-- On-screen keyboard: ABC, hiragana and katakana layouts (with ゛ ゜ and small-kana keys). In the kana layouts your real keyboard types romaji and kana come out (`nihongo` → にほんご) - no Japanese keyboard needs to be installed
+- Five input modes under the search box, like Pleco: handwriting (placeholder, later), **search by radical** (puzzle), **keyboard**, voice and photo (placeholders). No mode is on at first (you just type); press a mode button to open it, press it again to close it
+- Search by radical fills the results area: the kanji that contain the picked radicals are on top, the radicals below, and a bar with the chosen kanji, backspace and **DONE** (DONE puts the chosen kanji into the search box)
+- Keyboard mode: an on-screen kana keyboard (hiragana / katakana, with the small kana ぁ ぃ ぅ ぇ ぉ ゃ ゅ ょ っ ゎ as keys, and ゛ ゜); while it is open your real keyboard types romaji and kana come out (`nihongo` → にほんご) - no Japanese keyboard needs to be installed
 - On the search page every key you press goes into the search box, wherever the focus is
 - The search box and the results are in the left column; the word card takes the whole right side
 - History, favorites and your own lists
-- Translation languages (Settings): tick English / French / German / Russian; where a word, meaning or phrase has nothing in the ticked languages, the languages it does have are shown instead (never an empty meaning); one flag per language, not one per line
+- Translation languages (Settings): tick English / French / German / Russian; where a word, meaning or phrase has nothing in the ticked languages, the languages it does have are shown instead (never an empty meaning); one flag per language (in the meanings: once for the whole word), not one per line
 - "Random word" button under Search (Ctrl+R): a random entry of the whole dictionary, a new one on every press
-- Example phrases like a bilingual book: Japanese on the left, translations on the right, a line down the middle
+- Example sentences like a bilingual book: Japanese on the left, translations on the right, a line down the middle
 - Light / dark / "like Windows" theme, switched live; soft grey-green light theme and green accent (easy on the eyes)
 - Colour schemes (Settings): Golf green, Original red, Blue, Yellow - independent of light / dark; the logo and the window icon follow the scheme (the icon of the .exe file in Explorer stays green)
 - The sidebar is not painted: the colour of the page, divided by thin lines
