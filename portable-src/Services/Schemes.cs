@@ -81,10 +81,11 @@ namespace TakobotoApp
         }
 
         // ---- the mascot and the program icon follow the scheme --------------------------------------------------
-        /// <summary>The logo of the sidebar (a lighter one on the dark theme), in the colours of the scheme.</summary>
+        /// <summary>The logo of the sidebar in the colours of the scheme. It has the SAME colour in the light and in the dark
+        /// theme: the pale "LogoLight" variant that was used on dark looked washed out (and, recoloured, pink).</summary>
         public static BitmapSource Logo(bool dark)
         {
-            return Tint(Ui.Resource(dark ? "LogoLight.png" : "Logo.png"), Current);
+            return Tint(Ui.Resource("Logo.png"), Current);
         }
 
         /// <summary>The icon of the window (title bar, taskbar, Alt+Tab) in the colours of the scheme. (The icon of the
