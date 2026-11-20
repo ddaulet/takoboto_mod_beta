@@ -30,11 +30,12 @@ namespace TakobotoApp
         }
 
         public event Action<string> KanjiChosen;   // a click on a kanji: it goes into the search box at once
+        public event Action BackspaceRequested;    // the backspace button: delete the last character of the search box
+        public event Action DoneRequested;         // DONE: close the panel, show the results
 
         readonly List<Tile> tiles = new List<Tile>();
         readonly WrapPanel kanjiPanel = new WrapPanel();
-        readonly WrapPanel strip = new WrapPanel();      // the picked radicals
-        readonly TextBlock stripHint;
+        readonly StackPanel strip = new StackPanel { Orientation = Orientation.Horizontal };   // the picked radicals, one row
         readonly TextBlock kanjiInfo;
         int token;
         string candidates;   // kanji that contain every selected radical (null = nothing selected)
@@ -46,17 +47,11 @@ namespace TakobotoApp
             root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(2, GridUnitType.Star), MinHeight = 120 });    // the kanji
             root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(3, GridUnitType.Star), MinHeight = 140 });    // the radicals
 
-            // row 0: just the list of the radicals picked so far (a plain band, no buttons); a click on one takes it off again
-            var top = new Border { MinHeight = 56, Padding = new Thickness(12, 6, 12, 6), BorderThickness = new Thickness(0, 0, 0, 1) };
-            top.SetResourceReference(Border.BackgroundProperty, "SurfaceBg");
-            top.SetResourceReference(Border.BorderBrushProperty, "Line");
-            stripHint = Ui.Text("Pick the radicals the kanji contains.", 14, "FgFaint", null, new Thickness(4, 0, 0, 0));
-            stripHint.VerticalAlignment = VerticalAlignment.Center;
-            var topGrid = new Grid();
-            topGrid.Children.Add(strip);
-            topGrid.Children.Add(stripHint);
-            top.Child = topGrid;
-            root.Children.Add(top);
+            // row 0: the bar - backspace | the radicals picked so far (one row, a click on one takes it off again) | DONE
+            var bar = new ModeBar(strip);
+            bar.BackspacePressed += () => { if (BackspaceRequested != null) BackspaceRequested(); };
+            bar.DonePressed += () => { if (DoneRequested != null) DoneRequested(); };
+            root.Children.Add(bar);
 
             // row 1: the kanji that contain the picked radicals; a click on one puts it into the search box
             var results = new Grid { Margin = new Thickness(16, 8, 10, 0) };
@@ -84,7 +79,6 @@ namespace TakobotoApp
         void ShowStrip(KanjiRadical[] picked)
         {
             strip.Children.Clear();
-            stripHint.Visibility = picked.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
             foreach (var r in picked)
             {
                 var radical = r;

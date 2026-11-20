@@ -328,6 +328,34 @@
     </Setter>
   </Style>
 
+  <!-- ===== a round icon button (undo ...) ===== -->
+  <Style x:Key="RoundIconButton" TargetType="Button">
+    <Setter Property="Foreground" Value="{DynamicResource Fg}"/>
+    <Setter Property="FontFamily" Value="{StaticResource IconFont}"/>
+    <Setter Property="FontSize" Value="17"/>
+    <Setter Property="Width" Value="40"/>
+    <Setter Property="Height" Value="40"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Focusable" Value="False"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Bd" CornerRadius="20" BorderThickness="1" Background="{DynamicResource SurfaceAlt}" BorderBrush="{DynamicResource Line}">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource HoverBg}"/></Trigger>
+            <Trigger Property="IsPressed" Value="True">
+              <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SelectedBg}"/>
+              <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Accent}"/>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.35"/></Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
   <!-- ===== on-screen keyboard ===== -->
   <Style x:Key="KeyButton" TargetType="Button">
     <Setter Property="Foreground" Value="{DynamicResource Fg}"/>
