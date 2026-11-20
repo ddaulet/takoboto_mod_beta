@@ -3,27 +3,49 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:TakobotoApp">
   <Grid>
-    <Grid.RowDefinitions>
-      <RowDefinition Height="Auto"/>
-      <RowDefinition Height="*"/>
-    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="440" MinWidth="340"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="*" MinWidth="360"/>
+    </Grid.ColumnDefinitions>
 
-    <!-- search box -->
-    <Grid Margin="24,22,24,14">
-      <TextBox x:Name="Box" AutomationProperties.Name="Search words" Height="50" Padding="48,0,44,0" FontFamily="Segoe UI, Yu Gothic UI, Meiryo UI" TextChanged="Box_TextChanged" PreviewKeyDown="Box_KeyDown"/>
-      <TextBlock Text="&#xE721;" FontFamily="{StaticResource IconFont}" FontSize="17" Foreground="{DynamicResource FgMuted}" VerticalAlignment="Center" Margin="17,0,0,0" IsHitTestVisible="False"/>
-      <TextBlock x:Name="Placeholder" Text="Search Japanese (kanji, kana, romaji) or English, French, German, Russian…" FontSize="16" Foreground="{DynamicResource FgFaint}" VerticalAlignment="Center" Margin="58,0,44,0" IsHitTestVisible="False" TextTrimming="CharacterEllipsis"/>
-      <Button x:Name="ClearBtn" Style="{StaticResource IconButton}" Content="&#xE711;" HorizontalAlignment="Right" Margin="0,0,8,0" Visibility="Collapsed" Click="Clear_Click" ToolTip="Clear (Esc)" AutomationProperties.Name="Clear search" FontSize="12"/>
-    </Grid>
+    <!-- left column: search box, the five input modes, the panel of the active mode, the results -->
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
 
-    <Grid Grid.Row="1">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="420" MinWidth="320"/>
-        <ColumnDefinition Width="Auto"/>
-        <ColumnDefinition Width="*" MinWidth="360"/>
-      </Grid.ColumnDefinitions>
+      <!-- search box -->
+      <Grid Margin="16,16,16,8">
+        <TextBox x:Name="Box" AutomationProperties.Name="Search words" Height="48" Padding="46,0,40,0" FontFamily="Segoe UI, Yu Gothic UI, Meiryo UI"
+                 ToolTip="Japanese (kanji, kana, romaji) or English, French, German, Russian"
+                 TextChanged="Box_TextChanged" PreviewKeyDown="Box_KeyDown" PreviewTextInput="Box_PreviewTextInput"/>
+        <TextBlock Text="&#xE721;" FontFamily="{StaticResource IconFont}" FontSize="17" Foreground="{DynamicResource FgMuted}" VerticalAlignment="Center" Margin="16,0,0,0" IsHitTestVisible="False"/>
+        <TextBlock x:Name="Placeholder" Text="Search Japanese or English…" FontSize="16" Foreground="{DynamicResource FgFaint}" VerticalAlignment="Center" Margin="56,0,40,0" IsHitTestVisible="False" TextTrimming="CharacterEllipsis"/>
+        <Button x:Name="ClearBtn" Style="{StaticResource IconButton}" Content="&#xE711;" HorizontalAlignment="Right" Margin="0,0,7,0" Visibility="Collapsed" Click="Clear_Click" ToolTip="Clear (Esc)" AutomationProperties.Name="Clear search" FontSize="12"/>
+      </Grid>
 
-      <Grid>
+      <!-- the five input modes (like Pleco): handwriting, radicals, keyboard, voice, photo. Handwriting, voice and photo are placeholders. -->
+      <Border Grid.Row="1" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1">
+        <UniformGrid Columns="5" Margin="10,0">
+          <Button x:Name="ModeBrush" Style="{StaticResource ModeTabDummy}" Tag="&#xEDC6;" ToolTip="Handwriting - coming later" AutomationProperties.Name="Handwriting (coming later)" Click="Dummy_Click"/>
+          <RadioButton x:Name="ModeRadicals" Style="{StaticResource ModeTab}" Tag="&#xEA86;" GroupName="searchmode" ToolTip="Search by radical (Ctrl+5)" AutomationProperties.Name="Search by radical" Checked="Mode_Checked" Click="Mode_Click"/>
+          <RadioButton x:Name="ModeKeyboard" Style="{StaticResource ModeTab}" Tag="&#xE765;" GroupName="searchmode" IsChecked="True" ToolTip="Keyboard" AutomationProperties.Name="Keyboard" Checked="Mode_Checked" Click="Mode_Click"/>
+          <Button x:Name="ModeVoice" Style="{StaticResource ModeTabDummy}" Tag="&#xE720;" ToolTip="Voice - coming later" AutomationProperties.Name="Voice (coming later)" Click="Dummy_Click"/>
+          <Button x:Name="ModePhoto" Style="{StaticResource ModeTabDummy}" Tag="&#xE722;" ToolTip="Photo - coming later" AutomationProperties.Name="Photo (coming later)" Click="Dummy_Click"/>
+        </UniformGrid>
+      </Border>
+
+      <!-- the panel of the active mode (on-screen keyboard / radicals) -->
+      <Border x:Name="PanelBorder" Grid.Row="2" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="14,10,14,8">
+        <ContentControl x:Name="PanelHost" Focusable="False"/>
+      </Border>
+
+      <!-- results -->
+      <Grid Grid.Row="3">
         <Grid.RowDefinitions>
           <RowDefinition Height="*"/>
           <RowDefinition Height="Auto"/>
@@ -31,7 +53,7 @@
         <ListBox x:Name="List" Style="{StaticResource PlainList}" ItemTemplate="{StaticResource WordItemTemplate}" SelectionChanged="List_SelectionChanged" PreviewKeyDown="List_KeyDown"/>
 
         <!-- welcome -->
-        <StackPanel x:Name="Hint" Margin="28,18,24,0" VerticalAlignment="Top">
+        <StackPanel x:Name="Hint" Margin="22,16,20,0" VerticalAlignment="Top">
           <TextBlock Text="Type a word to start." FontSize="18" Foreground="{DynamicResource Fg}" Margin="0,0,0,6"/>
           <TextBlock TextWrapping="Wrap" FontSize="14.5" Foreground="{DynamicResource FgMuted}" Margin="0,0,0,14"
                      Text="Japanese in kanji, kana or romaji, or a word in English, French, German or Russian. Conjugated verbs and adjectives are recognised too."/>
@@ -39,19 +61,20 @@
           <WrapPanel x:Name="Examples"/>
         </StackPanel>
 
-        <TextBlock x:Name="NothingFound" Text="Nothing found." Visibility="Collapsed" FontSize="16" Foreground="{DynamicResource FgMuted}" Margin="28,18,24,0" VerticalAlignment="Top"/>
+        <TextBlock x:Name="NothingFound" Text="Nothing found." Visibility="Collapsed" FontSize="16" Foreground="{DynamicResource FgMuted}" Margin="22,16,20,0" VerticalAlignment="Top"/>
 
         <!-- how many results; more are loaded automatically while you scroll -->
         <Border x:Name="StatusBar" Grid.Row="1" Visibility="Collapsed" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="16,6">
           <TextBlock x:Name="StatusText" FontSize="12.5" Foreground="{DynamicResource FgMuted}"/>
         </Border>
       </Grid>
-
-      <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" ResizeBehavior="PreviousAndNext" Cursor="SizeWE"/>
-
-      <Border Grid.Column="2" BorderBrush="{DynamicResource Line}" BorderThickness="1,0,0,0">
-        <local:WordView x:Name="Detail"/>
-      </Border>
     </Grid>
+
+    <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" ResizeBehavior="PreviousAndNext" Cursor="SizeWE"/>
+
+    <!-- the word card takes the whole right side, from the top to the bottom -->
+    <Border Grid.Column="2" BorderBrush="{DynamicResource Line}" BorderThickness="1,0,0,0">
+      <local:WordView x:Name="Detail"/>
+    </Border>
   </Grid>
 </UserControl>

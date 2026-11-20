@@ -24,9 +24,26 @@ namespace TakobotoApp
         bool truncated, loadingMore;
         int pendingSelectId;     // select this word once the next search has filled the list (see OpenWord)
 
+        // ---- the five input modes under the search box ------------------------------------------------------------
+        enum Mode { Keyboard, Radicals }
+        InputKeyboard keyboard;
+        RadicalPicker picker;
+        Mode mode = Mode.Keyboard;
+        bool radicalsOpen = true;
+        int lastModeTick;
+
         public SearchView()
         {
             InitializeComponent();
+            keyboard = new InputKeyboard { Layout = Store.Settings.InputLayout, KeysVisible = Store.Settings.KeyboardOpen };
+            keyboard.TextTyped += t => InsertRaw(t);
+            keyboard.BackspaceTyped += () => BackspaceKey();
+            keyboard.Modify += kind => ModifyLast(kind);
+            keyboard.LayoutChanged += () => { Store.Settings.InputLayout = keyboard.Layout; Store.SaveSettings(); };
+            keyboard.KeysToggled += () => { Store.Settings.KeyboardOpen = keyboard.KeysVisible; Store.SaveSettings(); };
+            picker = new RadicalPicker();
+            picker.KanjiChosen += k => InsertRaw(k);
+            ShowPanel();
             List.ItemsSource = items;
             List.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(List_ScrollChanged));
             debounce.Tick += (s, e) => { debounce.Stop(); RunSearch(); };
@@ -40,6 +57,135 @@ namespace TakobotoApp
         }
 
         public void FocusBox() { Box.Focus(); Box.SelectAll(); }
+
+        // ---- modes -------------------------------------------------------------------------------------------------
+        // Checked is what UI Automation / the keyboard raise, Click comes with every mouse click (also on the mode that is
+        // already active, which folds / unfolds its panel). A mouse click raises both: the Click right after Checked is ignored.
+        void Mode_Checked(object sender, RoutedEventArgs e)
+        {
+            if (keyboard == null) return;   // while the page is being built
+            lastModeTick = Environment.TickCount;
+            mode = sender == ModeRadicals ? Mode.Radicals : Mode.Keyboard;
+            radicalsOpen = true;
+            ShowPanel();
+        }
+
+        void Mode_Click(object sender, RoutedEventArgs e)
+        {
+            if (Environment.TickCount - lastModeTick < 300) return;
+            if (mode == Mode.Keyboard) keyboard.KeysVisible = !keyboard.KeysVisible;   // the layout strip stays
+            else { radicalsOpen = !radicalsOpen; ShowPanel(); }
+        }
+
+        void Dummy_Click(object sender, RoutedEventArgs e) { }   // handwriting, voice and photo: placeholders for now
+
+        void ShowPanel()
+        {
+            PanelHost.Content = mode == Mode.Keyboard ? (UIElement)keyboard : picker;
+            PanelBorder.Visibility = mode == Mode.Keyboard || radicalsOpen ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        /// <summary>Switch to the radicals (puzzle) mode, or just open its panel when it is already active.</summary>
+        public void ShowRadicals(string[] preselect = null)
+        {
+            if (mode == Mode.Radicals) { radicalsOpen = true; ShowPanel(); }
+            else ModeRadicals.IsChecked = true;
+            if (preselect != null) picker.Preselect(preselect);
+        }
+
+        // ---- typing -------------------------------------------------------------------------------------------------
+        /// <summary>Put text into the search box at the caret (the on-screen keyboard and the kanji of the radical search).</summary>
+        public void InsertRaw(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            if (!Box.IsKeyboardFocusWithin) { Box.Focus(); Box.Select(Box.Text.Length, 0); }
+            int start = Box.SelectionStart;
+            Box.Text = Box.Text.Remove(start, Box.SelectionLength).Insert(start, text);
+            Box.CaretIndex = start + text.Length;
+        }
+
+        void BackspaceKey()
+        {
+            if (!Box.IsKeyboardFocusWithin) { Box.Focus(); Box.Select(Box.Text.Length, 0); }
+            int start = Box.SelectionStart, len = Box.SelectionLength;
+            if (len == 0) { if (start == 0) return; start--; len = 1; }
+            Box.Text = Box.Text.Remove(start, len);
+            Box.CaretIndex = start;
+        }
+
+        // the dakuten / handakuten / small keys change the kana before the caret (か -> が)
+        void ModifyLast(string kind)
+        {
+            if (!Box.IsKeyboardFocusWithin) { Box.Focus(); Box.Select(Box.Text.Length, 0); }
+            int caret = Box.SelectionStart;
+            if (caret == 0) return;
+            char c = Box.Text[caret - 1], n = Kana.Modify(c, kind);
+            if (n == c) return;
+            Box.Text = Box.Text.Remove(caret - 1, 1).Insert(caret - 1, n.ToString());
+            Box.CaretIndex = caret;
+        }
+
+        /// <summary>In the kana layouts the real keyboard types romaji and kana come out (ka -> か). An unfinished syllable
+        /// (k, sh, n) stays as letters until it is complete.</summary>
+        void Box_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            if (keyboard.Layout == "abc") return;
+            if (e.Text.Length != 1 || !Kana.IsRomajiChar(e.Text[0])) return;
+            e.Handled = true;
+            TypeRomaji(e.Text[0]);
+        }
+
+        void TypeRomaji(char ch)
+        {
+            string t = Box.Text;
+            int start = Box.SelectionStart, len = Box.SelectionLength;
+            if (len > 0) t = t.Remove(start, len);
+            // unfinished romaji right before the caret continues with this letter
+            int p = start;
+            for (int l = Math.Min(3, start); l >= 1; l--)
+            {
+                string tail = t.Substring(start - l, l);
+                if (tail.All(c => c < 128 && char.IsLetter(c)) && Kana.IsPending(tail.ToLowerInvariant())) { p = start - l; break; }
+            }
+            // "nn" gives ん, but the second n may still start the next syllable: konnichiwa -> こんにちわ, onna -> おんな
+            string run = t.Substring(p, start - p) + ch;
+            char lc = char.ToLowerInvariant(ch);
+            if (p == start && nnCaret == start && start > 0 && (t[start - 1] == 'ん' || t[start - 1] == 'ン') && ("aiueoy".IndexOf(lc) >= 0))
+                run = "n" + ch;
+            nnCaret = -1;
+            string rest, kana = Kana.Feed(run, keyboard.Layout == "kata", out rest);
+            if (run.ToLowerInvariant() == "nn") nnCaret = p + kana.Length;
+            Box.Text = t.Substring(0, p) + kana + rest + t.Substring(start);
+            Box.CaretIndex = p + kana.Length + rest.Length;
+        }
+
+        int nnCaret = -1;   // caret position right after a ん that came from "nn"
+
+        // a lone "n" before the caret is waiting for a vowel: Enter / Space settle it as ん
+        void CommitPendingN()
+        {
+            int caret = Box.SelectionStart;
+            if (Box.SelectionLength == 0 && caret > 0 && (Box.Text[caret - 1] == 'n' || Box.Text[caret - 1] == 'N'))
+            {
+                string kana = keyboard.Layout == "kata" ? "ン" : "ん";
+                Box.Text = Box.Text.Remove(caret - 1, 1).Insert(caret - 1, kana);
+                Box.CaretIndex = caret;
+            }
+        }
+
+        /// <summary>A key was pressed while the focus was somewhere else on the search page (the result list, the card ...):
+        /// it goes into the search box. When the box was not in use, what was typed there before is replaced: it is a new search.</summary>
+        public void TypeFromAnywhere(string text)
+        {
+            if (!Box.IsKeyboardFocusWithin) { Box.Focus(); if (Box.Text.Length > 0) Box.SelectAll(); }
+            if (keyboard.Layout != "abc" && text.Length == 1 && Kana.IsRomajiChar(text[0])) TypeRomaji(text[0]);
+            else InsertRaw(text);
+        }
+
+        public void BackspaceFromAnywhere() { BackspaceKey(); }
+
+        /// <summary>For automated tests (--layout abc|hira|kata): set the keyboard layout without saving it.</summary>
+        public void TestLayout(string layout) { keyboard.Layout = layout; }
 
         public void SetQuery(string text)
         {
@@ -180,6 +326,7 @@ namespace TakobotoApp
 
         void Box_KeyDown(object sender, KeyEventArgs e)
         {
+            if ((e.Key == Key.Enter || e.Key == Key.Space) && keyboard.Layout != "abc") CommitPendingN();
             if (e.Key == Key.Escape) { Box.Text = ""; e.Handled = true; }
             else if (e.Key == Key.Down && items.Count > 0)
             {

@@ -12,7 +12,6 @@ namespace TakobotoApp
 
         readonly SearchView search = new SearchView();
         readonly ListsView lists = new ListsView();
-        readonly RadicalsView radicals = new RadicalsView();
         readonly SettingsView settings = new SettingsView();
         readonly AboutView about = new AboutView();
         UIElement[] pages;
@@ -24,7 +23,7 @@ namespace TakobotoApp
             Theme.Changed += UpdateBranding;   // the logo and the window icon follow the colour scheme
             UpdateBranding();
 
-            pages = new UIElement[] { search, lists, radicals, settings, about };
+            pages = new UIElement[] { search, lists, settings, about };
             foreach (var p in pages) { p.Visibility = Visibility.Collapsed; Host.Children.Add(p); }
 
             var s = Store.Settings;
@@ -41,6 +40,7 @@ namespace TakobotoApp
             Closing += (a, b) => SaveWindow();
             Loaded += (a, b) => search.FocusBox();
             PreviewKeyDown += OnKey;
+            PreviewTextInput += OnTextInput;
             ready = true;
             Show(search);
         }
@@ -88,7 +88,6 @@ namespace TakobotoApp
             else if (rb == NavHistory) { lists.ShowHistory(); Show(lists); }
             else if (rb == NavFavorites) { lists.ShowFavorites(); Show(lists); }
             else if (rb == NavLists) { lists.ShowOverview(); Show(lists); }
-            else if (rb == NavKanji) { Show(radicals); }
             else if (rb == NavSettings) { Show(settings); }
             else if (rb == NavAbout) { Show(about); }
         }
@@ -133,16 +132,18 @@ namespace TakobotoApp
                 else if (a == "--tab" && v != null) { i++; WordView.TestTab = v; }
                 else if (a == "--scroll" && v != null) { i++; double d; if (double.TryParse(v, out d)) WordView.TestScroll = d; }
                 else if (a == "--word-test" && v != null) { i++; WordTest(v); }
+                else if (a == "--layout" && v != null) { i++; search.TestLayout(v); }
+                else if (a == "--type" && v != null) { i++; TypeTest(v); }
                 else if (a == "--page" && v != null)
                 {
                     i++;
                     var map = new System.Collections.Generic.Dictionary<string, RadioButton>
-                    { { "search", NavSearch }, { "history", NavHistory }, { "favorites", NavFavorites }, { "lists", NavLists }, { "kanji", NavKanji }, { "settings", NavSettings }, { "about", NavAbout } };
+                    { { "search", NavSearch }, { "history", NavHistory }, { "favorites", NavFavorites }, { "lists", NavLists }, { "settings", NavSettings }, { "about", NavAbout } };
                     RadioButton rb;
                     if (map.TryGetValue(v, out rb)) { rb.IsChecked = true; Navigate(rb); }
                 }
                 else if (a == "--search" && v != null) { i++; OpenSearch(v); }
-                else if (a == "--radicals" && v != null) { i++; NavKanji.IsChecked = true; Navigate(NavKanji); radicals.Preselect(v.Split(',')); }
+                else if (a == "--radicals" && v != null) { i++; NavSearch.IsChecked = true; Show(search); search.ShowRadicals(v.Split(',')); }
             }
         }
 
@@ -169,6 +170,19 @@ namespace TakobotoApp
             t.Start();
         }
 
+        /// <summary>--type text : a moment after start, "type" the text letter by letter as if it came from the keyboard
+        /// (goes through the same path as keys pressed anywhere on the search page).</summary>
+        void TypeTest(string text)
+        {
+            var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            t.Tick += (s, e) =>
+            {
+                t.Stop();
+                foreach (char c in text) search.TypeFromAnywhere(c.ToString());
+            };
+            t.Start();
+        }
+
         public void OpenList(UserList l)
         {
             NavLists.IsChecked = true;
@@ -176,8 +190,33 @@ namespace TakobotoApp
             Show(lists);
         }
 
+        // ---- on the search page every key goes to the search box, wherever the focus is ------------------------------
+        bool SearchPageActive { get { return search.Visibility == Visibility.Visible; } }
+
+        static bool IsTextEntry(IInputElement f)
+        {
+            return f is System.Windows.Controls.TextBox || f is PasswordBox || (f is ComboBox && ((ComboBox)f).IsEditable);
+        }
+
+        void OnTextInput(object sender, TextCompositionEventArgs e)
+        {
+            if (!SearchPageActive || string.IsNullOrEmpty(e.Text) || char.IsControl(e.Text[0])) return;
+            var f = Keyboard.FocusedElement;
+            if (IsTextEntry(f)) return;   // already typing into a box
+            // a space presses the focused button / selects the focused row: leave it to them
+            if (e.Text.Trim().Length == 0 && (f is System.Windows.Controls.Primitives.ButtonBase || f is ListBoxItem)) return;
+            e.Handled = true;
+            search.TypeFromAnywhere(e.Text);
+        }
+
         void OnKey(object sender, KeyEventArgs e)
         {
+            if (e.Key == Key.Back && Keyboard.Modifiers == ModifierKeys.None && SearchPageActive && !IsTextEntry(Keyboard.FocusedElement))
+            {
+                search.BackspaceFromAnywhere();
+                e.Handled = true;
+                return;
+            }
             if (Keyboard.Modifiers != ModifierKeys.Control) return;
             switch (e.Key)
             {
@@ -186,7 +225,7 @@ namespace TakobotoApp
                 case Key.D2: NavHistory.IsChecked = true; Navigate(NavHistory); e.Handled = true; break;
                 case Key.D3: NavFavorites.IsChecked = true; Navigate(NavFavorites); e.Handled = true; break;
                 case Key.D4: NavLists.IsChecked = true; Navigate(NavLists); e.Handled = true; break;
-                case Key.D5: NavKanji.IsChecked = true; Navigate(NavKanji); e.Handled = true; break;
+                case Key.D5: NavSearch.IsChecked = true; Show(search); search.ShowRadicals(); e.Handled = true; break;   // search by radical
                 case Key.R: OpenRandom(); e.Handled = true; break;
             }
         }

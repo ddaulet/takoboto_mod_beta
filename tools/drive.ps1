@@ -105,6 +105,12 @@ try {
                 }
                 Start-Sleep -Milliseconds 1200
             }
+            "value" {
+                $el = Find-El $win $arg
+                if (-not $el) { "!! not found: $arg"; continue }
+                $pat = $null
+                if ($el.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$pat)) { "value of '$arg': [" + $pat.Current.Value + "]" } else { "!! no value pattern: $arg" }
+            }
             "scrollend" {
                 $lst = $win.FindFirst("Descendants", (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::List)))
                 if ($lst) { $sp = $lst.GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern); $sp.SetScrollPercent(-1, 100); Start-Sleep -Milliseconds 1500 } else { "!! no list" }

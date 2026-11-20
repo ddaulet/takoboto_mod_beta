@@ -33,7 +33,6 @@
           <RadioButton x:Name="NavHistory" Style="{StaticResource NavItem}" Tag="&#xE81C;" Content="History" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>
           <RadioButton x:Name="NavFavorites" Style="{StaticResource NavItem}" Tag="&#xE734;" Content="Favorites" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>
           <RadioButton x:Name="NavLists" Style="{StaticResource NavItem}" Tag="&#xE14C;" Content="My lists" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>
-          <RadioButton x:Name="NavKanji" Style="{StaticResource NavItem}" Tag="&#xE80A;" Content="Kanji by radicals" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>
         </StackPanel>
       </DockPanel>
     </Border>

@@ -13,7 +13,10 @@ It is a new user interface on top of the original Takoboto dictionary engine.
 - Search as you type: romaji typed letter by letter (`nih` already lists にほ…), kanji mixed with Latin letters (`食b` → 食べ…), and a result list that keeps loading as you scroll (no 32-result cap)
 - Example phrases: every phrase the dictionary has for a word is shown right in the card (no button), loading as you scroll; all of it is offline, taken from the dictionary file
 - All text in the word card is selectable; click a word of an example phrase (or select any word) to get a small pop-up with its reading and meaning, click the pop-up to open the entry
-- Find kanji by radicals
+- Five input modes under the search box, like Pleco: handwriting (placeholder, later), **search by radical** (the puzzle button: pick radicals, click a kanji to put it into the search box), **keyboard** (default), voice and photo (placeholders)
+- On-screen keyboard: ABC, hiragana and katakana layouts (with ゛ ゜ and small-kana keys). In the kana layouts your real keyboard types romaji and kana come out (`nihongo` → にほんご) - no Japanese keyboard needs to be installed
+- On the search page every key you press goes into the search box, wherever the focus is
+- The search box and the results are in the left column; the word card takes the whole right side
 - History, favorites and your own lists
 - Translation languages (Settings): tick English / French / German / Russian; where a word, meaning or phrase has nothing in the ticked languages, the languages it does have are shown instead (never an empty meaning); one flag per language, not one per line
 - "Random word" button under Search (Ctrl+R): a random entry of the whole dictionary, a new one on every press
