@@ -53,7 +53,11 @@
           <TextBlock x:Name="VoiceInfo" FontSize="14" Foreground="{DynamicResource FgMuted}" TextWrapping="Wrap" Margin="0,0,0,14"/>
           <StackPanel x:Name="VoicePanel">
             <RadioButton x:Name="VoiceFemale" Style="{StaticResource ChoiceRadio}" Content="Female voice" GroupName="voice" Margin="0,0,0,12" Checked="Voice_Checked"/>
-            <RadioButton x:Name="VoiceMale" Style="{StaticResource ChoiceRadio}" Content="Male voice" GroupName="voice" Margin="0,0,0,14" Checked="Voice_Checked"/>
+            <RadioButton x:Name="VoiceMale" Style="{StaticResource ChoiceRadio}" Content="Male voice" GroupName="voice" Margin="0,0,0,18" Checked="Voice_Checked"/>
+            <TextBlock Text="Speed" FontSize="15" Foreground="{DynamicResource FgMuted}" Margin="0,0,0,10"/>
+            <RadioButton x:Name="SpeedFast" Style="{StaticResource ChoiceRadio}" Content="Fast" GroupName="voicespeed" Margin="0,0,0,12" Checked="Speed_Checked"/>
+            <RadioButton x:Name="SpeedMedium" Style="{StaticResource ChoiceRadio}" Content="Medium" GroupName="voicespeed" Margin="0,0,0,12" Checked="Speed_Checked"/>
+            <RadioButton x:Name="SpeedSlow" Style="{StaticResource ChoiceRadio}" Content="Slow" GroupName="voicespeed" Margin="0,0,0,14" Checked="Speed_Checked"/>
             <Button x:Name="VoiceTest" Style="{StaticResource PillButton}" Content="Listen" HorizontalAlignment="Left" Click="VoiceTest_Click"/>
           </StackPanel>
         </StackPanel>

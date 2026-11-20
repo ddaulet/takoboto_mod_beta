@@ -94,7 +94,7 @@ namespace TakobotoApp
             b.Click += (s, e) =>
             {
                 if (speaking) { Voice.Stop(); return; }
-                Voice.Speak(text(), Store.Settings.VoiceMale, on =>
+                Voice.Speak(text(), Store.Settings.VoiceMale, Store.Settings.VoiceSpeed, on =>
                 {
                     speaking = on;
                     if (on) b.SetResourceReference(System.Windows.Controls.Control.ForegroundProperty, "Accent"); else b.ClearValue(System.Windows.Controls.Control.ForegroundProperty);

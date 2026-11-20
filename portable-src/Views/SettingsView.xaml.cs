@@ -25,6 +25,9 @@ namespace TakobotoApp
             CheckFurigana.IsChecked = s.Furigana;
             VoiceFemale.IsChecked = !s.VoiceMale;
             VoiceMale.IsChecked = s.VoiceMale;
+            SpeedFast.IsChecked = s.VoiceSpeed <= 0;
+            SpeedMedium.IsChecked = s.VoiceSpeed == 1;
+            SpeedSlow.IsChecked = s.VoiceSpeed >= 2;
             if (Voice.Available)
                 VoiceInfo.Text = "The loudspeaker next to a reading and after each example sentence reads it aloud. Works offline; the voice is VOICEVOX Nemo.";
             else
@@ -86,12 +89,20 @@ namespace TakobotoApp
             if (loading) return;
             Store.Settings.VoiceMale = VoiceMale.IsChecked == true;
             Store.SaveSettings();
-            Voice.Speak(Sample, Store.Settings.VoiceMale, null);   // the new voice says hello
+            Voice.Speak(Sample, Store.Settings.VoiceMale, Store.Settings.VoiceSpeed, null);   // the new voice says hello
+        }
+
+        void Speed_Checked(object sender, RoutedEventArgs e)
+        {
+            if (loading) return;
+            Store.Settings.VoiceSpeed = SpeedSlow.IsChecked == true ? 2 : SpeedMedium.IsChecked == true ? 1 : 0;
+            Store.SaveSettings();
+            Voice.Speak(Sample, Store.Settings.VoiceMale, Store.Settings.VoiceSpeed, null);   // the new speed
         }
 
         void VoiceTest_Click(object sender, RoutedEventArgs e)
         {
-            Voice.Speak(Sample, Store.Settings.VoiceMale, null);
+            Voice.Speak(Sample, Store.Settings.VoiceMale, Store.Settings.VoiceSpeed, null);
         }
 
         void Furigana_Click(object sender, RoutedEventArgs e)

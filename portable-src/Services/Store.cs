@@ -14,6 +14,7 @@ namespace TakobotoApp
         public bool Furigana = true;             // the reading (small kana) above the kanji of the example sentences
         public bool RandomCommon = true;         // Random word / suggestions: only common words (many example sentences)
         public bool RandomSkipKatakana = false;  // ... and not the words written in katakana (foreign words)
+        public int VoiceSpeed = 1;               // pronunciation speed: 0 fast (the voice as it is), 1 medium, 2 slow
         public bool VoiceMale = false;           // pronunciation (the speaker buttons): male voice instead of the female one
         public string Scheme = "green";          // colour scheme: green | red | blue | yellow (see Schemes)
         public bool English = true;              // translation languages that are shown (see Langs); French/German/Russian are also searched

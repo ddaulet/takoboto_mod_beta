@@ -5,6 +5,7 @@ using System.IO;
 using System.Media;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -66,6 +67,8 @@ namespace TakobotoApp
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] static extern void voicevox_json_free(IntPtr json);
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] static extern int voicevox_synthesizer_tts(IntPtr synth, byte[] text, uint style, TtsOptions options, out UIntPtr length, out IntPtr wav);
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] static extern void voicevox_wav_free(IntPtr wav);
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] static extern int voicevox_synthesizer_create_audio_query(IntPtr synth, byte[] text, uint style, out IntPtr json);
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] static extern int voicevox_synthesizer_synthesis(IntPtr synth, byte[] audioQueryJson, uint style, TtsOptions options, out UIntPtr length, out IntPtr wav);
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] static extern IntPtr voicevox_error_result_to_message(int code);
         [DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)] static extern IntPtr LoadLibraryEx(string path, IntPtr file, uint flags);
 
@@ -137,12 +140,16 @@ namespace TakobotoApp
             return text.Replace("\r", " ").Replace("\n", " ").Trim();
         }
 
-        /// <summary>The spoken text as a WAV file (24 kHz, 16 bit, mono); null when it cannot be spoken. Slow: do not call on the window thread.</summary>
-        public static byte[] Synthesize(string text, uint style)
+        /// <summary>The speed of the speech for the three settings: 0 fast (the voice as it is), 1 medium, 2 slow.</summary>
+        public static double SpeedFor(int level) { return level <= 0 ? 1.0 : level == 1 ? 0.85 : 0.7; }
+
+        /// <summary>The spoken text as a WAV file (24 kHz, 16 bit, mono); null when it cannot be spoken. Slow: do not call on the window thread.
+        /// <paramref name="speed"/> 1.0 is the normal speed of the voice, smaller is slower.</summary>
+        public static byte[] Synthesize(string text, uint style, double speed = 1.0)
         {
             text = Clean(text);
             if (text.Length == 0) return null;
-            string key = style + "|" + text;
+            string key = style + "|" + speed.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + "|" + text;
             byte[] wav;
             lock (Cache) { if (Cache.TryGetValue(key, out wav)) return wav; }
             try
@@ -151,8 +158,18 @@ namespace TakobotoApp
                 {
                     if (!Init()) return null;
                     UIntPtr len; IntPtr ptr;
-                    int rc = voicevox_synthesizer_tts(synth, Utf8(text), style, new TtsOptions { enable_interrogative_upspeak = true }, out len, out ptr);
-                    Ok(rc, "tts");
+                    if (Math.Abs(speed - 1.0) < 0.001)
+                        Ok(voicevox_synthesizer_tts(synth, Utf8(text), style, new TtsOptions { enable_interrogative_upspeak = true }, out len, out ptr), "tts");
+                    else
+                    {
+                        // the speed is a field of the "audio query" (the plan of the speech): make the plan, change the speed, speak the plan
+                        IntPtr qp;
+                        Ok(voicevox_synthesizer_create_audio_query(synth, Utf8(text), style, out qp), "audio query");
+                        string query = FromUtf8(qp);
+                        voicevox_json_free(qp);
+                        string slow = Regex.Replace(query, "\"speedScale\"\\s*:\\s*[-0-9.eE+]+", "\"speedScale\":" + speed.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture));
+                        Ok(voicevox_synthesizer_synthesis(synth, Utf8(slow), style, new TtsOptions { enable_interrogative_upspeak = true }, out len, out ptr), "synthesis");
+                    }
                     wav = new byte[(int)len];
                     Marshal.Copy(ptr, wav, 0, wav.Length);
                     voicevox_wav_free(ptr);
@@ -178,7 +195,7 @@ namespace TakobotoApp
 
         /// <summary>Speak the text (a new request stops the one before it). <paramref name="state"/> gets true at once and false when this
         /// request is over (finished, stopped, replaced or failed); it is called on the thread that called Speak (the window thread).</summary>
-        public static void Speak(string text, bool male, Action<bool> state)
+        public static void Speak(string text, bool male, int speedLevel, Action<bool> state)
         {
             var sync = SynchronizationContext.Current;
             Action<bool> tell = b => { if (state == null) return; if (sync != null) sync.Post(_ => state(b), null); else state(b); };
@@ -190,7 +207,7 @@ namespace TakobotoApp
                 try
                 {
                     if (my != generation) return;
-                    var wav = Synthesize(text, male ? MaleStyle : FemaleStyle);
+                    var wav = Synthesize(text, male ? MaleStyle : FemaleStyle, SpeedFor(speedLevel));
                     if (wav == null || my != generation) return;
                     using (var ms = new MemoryStream(wav))
                     using (var p = new SoundPlayer(ms))
