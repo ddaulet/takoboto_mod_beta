@@ -82,7 +82,7 @@ namespace TakobotoApp
 
         /// <summary>The loudspeaker button: speaks the text with the voice chosen in the settings. A click while it speaks stops it. Without the voice
         /// files (see <see cref="Voice"/>) the button does not show at all.</summary>
-        public static Button SpeakButton(Func<string> text, double size = 28)
+        public static Button SpeakButton(Func<string> text, double size = 28, Func<string> voiceKey = null, Func<int> speed = null)
         {
             var b = new Button
             {
@@ -94,7 +94,7 @@ namespace TakobotoApp
             b.Click += (s, e) =>
             {
                 if (speaking) { Voice.Stop(); return; }
-                Voice.Speak(text(), Store.Settings.VoiceKey, Store.Settings.VoiceMale, Store.Settings.VoiceSpeed, on =>
+                Voice.Speak(text(), voiceKey != null ? voiceKey() : Store.Settings.VoiceKey, Store.Settings.VoiceMale, speed != null ? speed() : Store.Settings.VoiceSpeed, on =>
                 {
                     speaking = on;
                     if (on) b.SetResourceReference(System.Windows.Controls.Control.ForegroundProperty, "Accent"); else b.ClearValue(System.Windows.Controls.Control.ForegroundProperty);

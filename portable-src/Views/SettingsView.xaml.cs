@@ -24,16 +24,21 @@ namespace TakobotoApp
             CheckRussian.IsChecked = s.Russian;
             CheckFurigana.IsChecked = s.Furigana;
             var chosen = Voice.Find(s.VoiceKey, s.VoiceMale);
+            // one row per voice: the choice, and a loudspeaker to the right of it to listen (nothing is played by choosing)
             foreach (var v in Voice.Installed())
             {
-                var rb = new RadioButton { Style = (Style)FindResource("ChoiceRadio"), GroupName = "voice", Margin = new Thickness(0, 0, 0, 12), Tag = v, IsChecked = chosen != null && v.Key == chosen.Key };
-                rb.Content = v.Name;
-                rb.Checked += Voice_Checked;
-                VoiceList.Children.Add(rb);
+                var voice = v;
+                AddChoiceRow(VoiceList, voice.Name, "voice", chosen != null && voice.Key == chosen.Key, voice, Voice_Checked,
+                    Ui.SpeakButton(() => Sample, 30, () => voice.Key, () => Store.Settings.VoiceSpeed));
             }
-            SpeedFast.IsChecked = s.VoiceSpeed <= 0;
-            SpeedMedium.IsChecked = s.VoiceSpeed == 1;
-            SpeedSlow.IsChecked = s.VoiceSpeed >= 2;
+            // the same for the speeds; they are heard in the voice that is chosen above
+            string[] speedNames = { "Fast", "Medium", "Slow" };
+            for (int i = 0; i < 3; i++)
+            {
+                int level = i;
+                AddChoiceRow(SpeedList, speedNames[i], "voicespeed", Math.Min(2, Math.Max(0, s.VoiceSpeed)) == level, level, Speed_Checked,
+                    Ui.SpeakButton(() => Sample, 30, () => Store.Settings.VoiceKey, () => level));
+            }
             if (Voice.Available)
                 VoiceInfo.Text = "The loudspeaker next to a reading and after each example sentence reads it aloud. Works offline; the voices are from VOICEVOX.";
             else
@@ -90,6 +95,21 @@ namespace TakobotoApp
 
         const string Sample = "こんにちは。タコボトへようこそ。";
 
+        void AddChoiceRow(Panel list, string text, string group, bool isChecked, object tag, RoutedEventHandler onChecked, Button speak)
+        {
+            var row = new Grid { Margin = new Thickness(0, 0, 0, 6), HorizontalAlignment = HorizontalAlignment.Left };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(225) });   // the loudspeakers stand in one column
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var rb = new RadioButton { Style = (Style)FindResource("ChoiceRadio"), GroupName = group, Tag = tag, Content = text, VerticalAlignment = VerticalAlignment.Center, IsChecked = isChecked };
+            rb.Checked += onChecked;
+            row.Children.Add(rb);
+            speak.Margin = new Thickness(0);
+            speak.VerticalAlignment = VerticalAlignment.Center;
+            Grid.SetColumn(speak, 1);
+            row.Children.Add(speak);
+            list.Children.Add(row);
+        }
+
         void Voice_Checked(object sender, RoutedEventArgs e)
         {
             if (loading) return;
@@ -97,20 +117,13 @@ namespace TakobotoApp
             if (voice == null) return;
             Store.Settings.VoiceKey = voice.Key;
             Store.SaveSettings();
-            Voice.Speak(Sample, Store.Settings.VoiceKey, Store.Settings.VoiceMale, Store.Settings.VoiceSpeed, null);   // the new voice says hello
         }
 
         void Speed_Checked(object sender, RoutedEventArgs e)
         {
             if (loading) return;
-            Store.Settings.VoiceSpeed = SpeedSlow.IsChecked == true ? 2 : SpeedMedium.IsChecked == true ? 1 : 0;
+            Store.Settings.VoiceSpeed = (int)((RadioButton)sender).Tag;
             Store.SaveSettings();
-            Voice.Speak(Sample, Store.Settings.VoiceKey, Store.Settings.VoiceMale, Store.Settings.VoiceSpeed, null);   // the new speed
-        }
-
-        void VoiceTest_Click(object sender, RoutedEventArgs e)
-        {
-            Voice.Speak(Sample, Store.Settings.VoiceKey, Store.Settings.VoiceMale, Store.Settings.VoiceSpeed, null);
         }
 
         void Furigana_Click(object sender, RoutedEventArgs e)
