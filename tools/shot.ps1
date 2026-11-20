@@ -2,7 +2,8 @@
 #   powershell -File shot.ps1 -ProcessId 1234 -Out C:\path\shot.png
 param(
     [Parameter(Mandatory)] [int]$ProcessId,
-    [Parameter(Mandatory)] [string]$Out
+    [Parameter(Mandatory)] [string]$Out,
+    [switch]$Smallest     # capture the smallest visible window (e.g. a pop-up) instead of the main one
 )
 Add-Type -ReferencedAssemblies System.Drawing -TypeDefinition @"
 using System;
@@ -19,9 +20,9 @@ public static class WinShot
     [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr h, out RECT r);
     [DllImport("user32.dll")] static extern bool PrintWindow(IntPtr h, IntPtr hdc, uint flags);
     [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L, T, R, B; }
-    public static string Shot(int pid, string path)
+    public static string Shot(int pid, string path, bool smallest)
     {
-        IntPtr best = IntPtr.Zero; long bestArea = 0;
+        IntPtr best = IntPtr.Zero; long bestArea = smallest ? long.MaxValue : 0;
         EnumWindows(delegate (IntPtr h, IntPtr l)
         {
             uint p; GetWindowThreadProcessId(h, out p);
@@ -29,7 +30,7 @@ public static class WinShot
             {
                 RECT r; GetWindowRect(h, out r);
                 long a = (long)(r.R - r.L) * (r.B - r.T);
-                if (a > bestArea) { bestArea = a; best = h; }
+                if (smallest ? (a > 3000 && a < bestArea) : (a > bestArea)) { bestArea = a; best = h; }
             }
             return true;
         }, IntPtr.Zero);
@@ -45,4 +46,4 @@ public static class WinShot
     }
 }
 "@
-[WinShot]::Shot($ProcessId, $Out)
+[WinShot]::Shot($ProcessId, $Out, [bool]$Smallest)

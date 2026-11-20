@@ -54,6 +54,18 @@ namespace TakobotoApp
             return t;
         }
 
+        /// <summary>Like <see cref="Text"/>, but the user can select and copy it.</summary>
+        public static SelText SText(string s, double size = 15, string brush = "Fg", FontWeight? weight = null, Thickness? margin = null, bool jp = false)
+        {
+            var t = new SelText { FontSize = size };
+            t.Text = s ?? "";
+            t.SetResourceReference(System.Windows.Controls.Control.ForegroundProperty, brush);
+            if (weight.HasValue) t.FontWeight = weight.Value;
+            if (margin.HasValue) t.Margin = margin.Value;
+            if (jp) t.FontFamily = Jp;
+            return t;
+        }
+
         public static Run Run(string s, string brush = null, double size = 0, bool bold = false)
         {
             var r = new Run(s);

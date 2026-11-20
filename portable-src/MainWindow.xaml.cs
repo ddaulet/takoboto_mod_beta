@@ -91,6 +91,14 @@ namespace TakobotoApp
 
         public void RefreshSearch() { search.Refresh(); }
 
+        /// <summary>Open one dictionary entry in the search page (used by the word preview pop-up).</summary>
+        public void OpenWord(Takoboto.Database.WordTag tag, string queryText)
+        {
+            NavSearch.IsChecked = true;
+            Show(search);
+            search.OpenWord(tag, queryText);
+        }
+
         /// <summary>Command line (mainly for testing):  --theme dark|light  --page search|history|favorites|lists|kanji|settings|about
         /// --search text  --radicals "a,b"  --tab overview|forms|kanji  --scroll N</summary>
         public void ApplyArgs(string[] args)
@@ -101,6 +109,7 @@ namespace TakobotoApp
                 if (a == "--theme" && v != null) { Theme.Apply(v); i++; }
                 else if (a == "--tab" && v != null) { i++; WordView.TestTab = v; }
                 else if (a == "--scroll" && v != null) { i++; double d; if (double.TryParse(v, out d)) WordView.TestScroll = d; }
+                else if (a == "--word-test" && v != null) { i++; WordTest(v); }
                 else if (a == "--page" && v != null)
                 {
                     i++;
@@ -112,6 +121,29 @@ namespace TakobotoApp
                 else if (a == "--search" && v != null) { i++; OpenSearch(v); }
                 else if (a == "--radicals" && v != null) { i++; NavKanji.IsChecked = true; Navigate(NavKanji); radicals.Preselect(v.Split(',')); }
             }
+        }
+
+        /// <summary>--word-test click:食事  or  select:食事 : a few seconds after start, click / select that word of a sentence
+        /// in the open card (lets the automated tests exercise the preview pop-up without a real mouse).</summary>
+        void WordTest(string what)
+        {
+            bool click = what.StartsWith("click:");
+            string word = what.Substring(what.IndexOf(':') + 1);
+            var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+            t.Tick += (s, e) =>
+            {
+                t.Stop();
+                var q = new System.Collections.Generic.Queue<DependencyObject>();
+                q.Enqueue(this);
+                while (q.Count > 0)
+                {
+                    var o = q.Dequeue();
+                    var st = o as SelText;
+                    if (st != null && st.Probe(word, click)) return;
+                    for (int i = 0, n = System.Windows.Media.VisualTreeHelper.GetChildrenCount(o); i < n; i++) q.Enqueue(System.Windows.Media.VisualTreeHelper.GetChild(o, i));
+                }
+            };
+            t.Start();
         }
 
         public void OpenList(UserList l)

@@ -6,20 +6,29 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
+using Takoboto.Database;
 
 namespace TakobotoApp
 {
     public partial class SearchView : UserControl
     {
+        const int FirstLimit = 100;    // partial matches asked from the engine at first (fast)
+        const int MaxLimit = 5000;     // ... and at most, while the user keeps scrolling
+
         readonly ObservableCollection<WordItem> items = new ObservableCollection<WordItem>();
         readonly DispatcherTimer debounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(140) };
         int generation;
-        bool auto;   // true while the code (not the user) selects a row
+        bool auto;               // true while the code (not the user) selects a row
+        int limit = FirstLimit;
+        string currentQuery = "";
+        bool truncated, loadingMore;
+        int pendingSelectId;     // select this word once the next search has filled the list (see OpenWord)
 
         public SearchView()
         {
             InitializeComponent();
             List.ItemsSource = items;
+            List.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(List_ScrollChanged));
             debounce.Tick += (s, e) => { debounce.Stop(); RunSearch(); };
             foreach (var ex in new[] { "食べる", "taberu", "water", "Wasser", "вода", "日本語" })
             {
@@ -41,6 +50,13 @@ namespace TakobotoApp
             Box.Focus();
         }
 
+        /// <summary>Search for <paramref name="queryText"/> and open exactly this entry (used by the word previews).</summary>
+        public void OpenWord(WordTag tag, string queryText)
+        {
+            pendingSelectId = tag.WordId;
+            SetQuery(queryText);
+        }
+
         /// <summary>Re-runs the current search (e.g. after the language options changed).</summary>
         public void Refresh() { if (Box.Text.Trim().Length > 0) RunSearch(); }
 
@@ -56,26 +72,88 @@ namespace TakobotoApp
         {
             string q = Box.Text.Trim();
             int my = ++generation;
+            limit = FirstLimit;
+            loadingMore = false;
             if (q.Length == 0)
             {
                 items.Clear();
                 Detail.Clear();
+                StatusBar.Visibility = Visibility.Collapsed;
                 Hint.Visibility = Visibility.Visible;
                 NothingFound.Visibility = Visibility.Collapsed;
+                pendingSelectId = 0;
                 return;
             }
             Hint.Visibility = Visibility.Collapsed;
             SearchOutcome r = null;
-            try { r = await Task.Run(() => Engine.Search(q)); }
+            try { r = await Task.Run(() => Engine.Search(q, FirstLimit)); }
             catch (Exception ex) { App.Log(ex); }
             if (my != generation || r == null) return;   // a newer search is already running
 
+            currentQuery = q;
+            truncated = r.Truncated;
             items.Clear();
             foreach (var t in r.Exact.Concat(r.Partial)) items.Add(WordItem.From(t));
             NothingFound.Visibility = items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-            if (items.Count == 0) Detail.Clear();
-            else { auto = true; List.SelectedIndex = 0; auto = false; }   // show the best match right away
-            List.ScrollIntoView(items.FirstOrDefault());
+            UpdateStatus();
+            if (items.Count == 0) { Detail.Clear(); pendingSelectId = 0; return; }
+
+            var wanted = pendingSelectId > 0 ? items.FirstOrDefault(i => i.Tag.WordId == pendingSelectId) : null;
+            pendingSelectId = 0;
+            if (wanted != null) { List.SelectedItem = wanted; List.ScrollIntoView(wanted); }   // chosen by the user: counts for the history
+            else { auto = true; List.SelectedIndex = 0; auto = false; List.ScrollIntoView(items[0]); }   // best match shown right away
+        }
+
+        // ---- more results while scrolling --------------------------------------------------------------------------
+        void List_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            if (e.VerticalChange == 0) return;
+            if (!truncated || loadingMore || limit >= MaxLimit) return;
+            // the list scrolls by whole items: offsets are item numbers
+            if (e.VerticalOffset + e.ViewportHeight >= e.ExtentHeight - 5) LoadMore();
+        }
+
+        async void LoadMore()
+        {
+            loadingMore = true;
+            int my = generation;
+            string q = currentQuery;
+            int newLimit = Math.Min(MaxLimit, limit * 4);
+            StatusText.Text = items.Count + " results - loading more…";
+            SearchOutcome r = null;
+            try { r = await Task.Run(() => Engine.Search(q, newLimit)); }
+            catch (Exception ex) { App.Log(ex); }
+            if (my != generation || r == null) { loadingMore = false; return; }
+
+            limit = newLimit;
+            truncated = r.Truncated;
+            var all = r.Exact.Concat(r.Partial).ToList();
+            bool samePrefix = all.Count >= items.Count;
+            for (int i = 0; samePrefix && i < items.Count; i++) if (items[i].Tag.WordId != all[i].WordId) samePrefix = false;
+            if (samePrefix)
+                for (int i = items.Count; i < all.Count; i++) items.Add(WordItem.From(all[i]));   // just append the tail
+            else
+            {
+                var selected = List.SelectedItem as WordItem;
+                int keep = selected == null ? -1 : selected.Tag.WordId;
+                auto = true;
+                items.Clear();
+                foreach (var t in all) items.Add(WordItem.From(t));
+                var again = keep < 0 ? null : items.FirstOrDefault(i => i.Tag.WordId == keep);
+                if (again != null) List.SelectedItem = again;
+                auto = false;
+            }
+            loadingMore = false;
+            UpdateStatus();
+        }
+
+        void UpdateStatus()
+        {
+            StatusBar.Visibility = items.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+            if (items.Count == 0) return;
+            if (!truncated) StatusText.Text = items.Count + (items.Count == 1 ? " result" : " results");
+            else if (limit >= MaxLimit) StatusText.Text = "First " + items.Count + " results - type more to narrow it down";
+            else StatusText.Text = items.Count + "+ results - more load as you scroll";
         }
 
         void List_SelectionChanged(object sender, SelectionChangedEventArgs e)

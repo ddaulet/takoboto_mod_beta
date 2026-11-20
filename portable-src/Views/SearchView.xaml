@@ -24,6 +24,10 @@
       </Grid.ColumnDefinitions>
 
       <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="*"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
         <ListBox x:Name="List" Style="{StaticResource PlainList}" ItemTemplate="{StaticResource WordItemTemplate}" SelectionChanged="List_SelectionChanged" PreviewKeyDown="List_KeyDown"/>
 
         <!-- welcome -->
@@ -36,6 +40,11 @@
         </StackPanel>
 
         <TextBlock x:Name="NothingFound" Text="Nothing found." Visibility="Collapsed" FontSize="16" Foreground="{DynamicResource FgMuted}" Margin="28,18,24,0" VerticalAlignment="Top"/>
+
+        <!-- how many results; more are loaded automatically while you scroll -->
+        <Border x:Name="StatusBar" Grid.Row="1" Visibility="Collapsed" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="16,6">
+          <TextBlock x:Name="StatusText" FontSize="12.5" Foreground="{DynamicResource FgMuted}"/>
+        </Border>
       </Grid>
 
       <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" ResizeBehavior="PreviousAndNext" Cursor="SizeWE"/>

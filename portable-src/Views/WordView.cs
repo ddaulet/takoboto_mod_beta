@@ -91,7 +91,7 @@ namespace TakobotoApp
             current = null;
             tabBar.Visibility = Visibility.Collapsed;
             root.Children.Clear();
-            root.Children.Add(Ui.Text("Select a word to see its details.", 16, "FgMuted", null, new Thickness(0, 40, 0, 0)));
+            root.Children.Add(Ui.SText("Select a word to see its details.", 16, "FgMuted", null, new Thickness(0, 40, 0, 0)));
         }
 
         public async void Show(WordTag tag)
@@ -101,7 +101,7 @@ namespace TakobotoApp
             current = tag;
             if (tabBar.Visibility == Visibility.Visible) tabBar.Visibility = Visibility.Hidden;   // keep the space, avoid a jump
             root.Children.Clear();
-            root.Children.Add(Ui.Text("Loading…", 16, "FgMuted", null, new Thickness(0, 40, 0, 0)));
+            root.Children.Add(Ui.SText("Loading…", 16, "FgMuted", null, new Thickness(0, 40, 0, 0)));
             Word w = null;
             try { w = await Task.Run(() => Engine.LoadWord(tag)); }
             catch (Exception ex) { App.Log(ex); }
@@ -110,7 +110,7 @@ namespace TakobotoApp
             if (w == null)
             {
                 tabBar.Visibility = Visibility.Collapsed;
-                root.Children.Add(Ui.Text("This word could not be loaded.", 16, "FgMuted"));
+                root.Children.Add(Ui.SText("This word could not be loaded.", 16, "FgMuted"));
                 return;
             }
             Build(w, tag);
@@ -255,7 +255,7 @@ namespace TakobotoApp
         // ---- a written form (kanji / kana) as in the original app ---------------------------------------------
         UIElement PartBlock(WordPart p, double size)
         {
-            var tb = new TextBlock { TextWrapping = TextWrapping.Wrap, FontFamily = Ui.JpFont, Margin = new Thickness(0, 0, 0, 6) };
+            var tb = new SelText { FontFamily = Ui.JpFont, Margin = new Thickness(0, 0, 0, 6) };
             string brush = p.HasInfoMarkedSecondary ? "FgFaint" : (p.IsSecondary ? "FgMuted" : "Fg");
             tb.Inlines.Add(Ui.Run(p.Text, brush, size));
             if (!Ui.HasKanji(p.Text))
@@ -293,11 +293,11 @@ namespace TakobotoApp
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(w.Meanings.Count > 1 ? 34 : 0) });
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                 if (w.Meanings.Count > 1)
-                    row.Children.Add(Ui.Text(n + ".", 16, "FgMuted", FontWeights.SemiBold, new Thickness(0, 1, 0, 0)));
+                    row.Children.Add(Ui.SText(n + ".", 16, "FgMuted", FontWeights.SemiBold, new Thickness(0, 1, 0, 0)));
 
                 var body = new StackPanel();
                 if (m.HasInfos)
-                    body.Children.Add(Ui.Text(string.Join("\n", m.Infos.Select(i => i.Text)), 13.5, "FgMuted", null, new Thickness(0, 0, 0, 4)));
+                    body.Children.Add(Ui.SText(string.Join("\n", m.Infos.Select(i => i.Text)), 13.5, "FgMuted", null, new Thickness(0, 0, 0, 4)));
                 foreach (var part in m.Parts)
                 {
                     var line = new Grid { Margin = new Thickness(0, 1, 0, 1) };
@@ -306,7 +306,7 @@ namespace TakobotoApp
                     var flag = Ui.Flag(part.Language, 18);
                     flag.Margin = new Thickness(0, 3, 10, 0);
                     line.Children.Add(flag);
-                    var t = Ui.Text(part.Text, 16, "Fg", part.IsPrimary ? FontWeights.SemiBold : FontWeights.Normal);
+                    var t = Ui.SText(part.Text, 16, "Fg", part.IsPrimary ? FontWeights.SemiBold : FontWeights.Normal);
                     if (!part.IsPrimary) t.SetResourceReference(TextBlock.ForegroundProperty, "FgMuted");
                     Grid.SetColumn(t, 1);
                     line.Children.Add(t);
@@ -345,15 +345,15 @@ namespace TakobotoApp
         UIElement FormBlock(string label, WordForm f)
         {
             var box = new StackPanel { Margin = new Thickness(0, 0, 14, 14) };
-            box.Children.Add(Ui.Text(label, 12.5, "FgMuted", FontWeights.SemiBold));
-            var tb = new TextBlock { TextWrapping = TextWrapping.Wrap, FontFamily = Ui.JpFont };
+            box.Children.Add(Ui.SText(label, 12.5, "FgMuted", FontWeights.SemiBold));
+            var tb = new SelText { FontFamily = Ui.JpFont };
             tb.Inlines.Add(Ui.Run(f.Plain, "Fg", 22));
             if (f.HasAdditionalPlain) tb.Inlines.Add(Ui.Run(", " + f.AdditionalPlain, "Fg", 22));
             if (f.HasPolite) tb.Inlines.Add(Ui.Run(", " + f.Polite, "FgMuted", 22));
             string romaji = !Ui.HasKanji(f.Plain) ? Ui.Romaji(f.Plain) : null;
             if (!string.IsNullOrEmpty(romaji)) { tb.Inlines.Add(new LineBreak()); tb.Inlines.Add(Ui.Run(romaji, "FgFaint", 14)); }
             box.Children.Add(tb);
-            if (f.HasExplanation) box.Children.Add(Ui.Text(f.Explanation, 13, "FgMuted"));
+            if (f.HasExplanation) box.Children.Add(Ui.SText(f.Explanation, 13, "FgMuted"));
             return box;
         }
 
@@ -370,17 +370,17 @@ namespace TakobotoApp
                 block.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
                 block.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-                var big = Ui.Text(k.Kanji, 54, "Fg", null, new Thickness(0, -6, 0, 0), true);
+                var big = Ui.SText(k.Kanji, 54, "Fg", null, new Thickness(0, -6, 0, 0), true);
                 big.VerticalAlignment = VerticalAlignment.Top;
                 block.Children.Add(big);
 
                 var info = new StackPanel();
-                var line = new TextBlock { TextWrapping = TextWrapping.Wrap, FontFamily = Ui.JpFont, FontSize = 17 };
+                var line = new SelText { FontFamily = Ui.JpFont, FontSize = 17 };
                 if (k.HasOnReading) { line.Inlines.Add(Ui.Run("ON: ", "FgFaint")); line.Inlines.Add(Ui.Run(k.OnReading, "Fg")); }
                 if (k.HasOnReading && k.HasKunReading) line.Inlines.Add(new Run("   "));
                 if (k.HasKunReading) { line.Inlines.Add(Ui.Run("KUN: ", "FgFaint")); line.Inlines.Add(Ui.Run(k.KunReading, "Fg")); }
                 if (line.Inlines.Count > 0) info.Children.Add(line);
-                if (!string.IsNullOrEmpty(k.AllMeanings)) info.Children.Add(Ui.Text(k.AllMeanings, 15, "Fg", null, new Thickness(0, 4, 0, 0)));
+                if (!string.IsNullOrEmpty(k.AllMeanings)) info.Children.Add(Ui.SText(k.AllMeanings, 15, "Fg", null, new Thickness(0, 4, 0, 0)));
                 var more = new Button { Style = (Style)FindResource("LinkButton"), Content = "Words with " + k.Kanji, HorizontalAlignment = HorizontalAlignment.Left, FontSize = 14, Margin = new Thickness(0, 6, 0, 0) };
                 string kanjiChar = k.Kanji;
                 more.Click += (s, e) => MainWindow.Instance.OpenSearch(kanjiChar);
@@ -461,10 +461,62 @@ namespace TakobotoApp
             return outer;
         }
 
+        // The engine tells which dictionary words a sentence contains (dictionary form + reading) but not where they
+        // stand in the text. So each word is looked for in the text: first the whole written form, then (for conjugated
+        // words such as 食べる -> 食べて) its stem, which must contain a kanji so that single kana never match by chance.
+        // Found words become links: click -> preview pop-up.
+        UIElement SentenceText(Sentence s)
+        {
+            var box = new SelText { FontSize = 22, FontFamily = Ui.JpFont };
+            string text = s.MainText ?? "";
+            int cursor = 0;
+            foreach (var part in s.Parts ?? new List<SentencePart>())
+            {
+                int at = -1, len = 0;
+                string w = part.Writing ?? "";
+                for (int l = w.Length; l >= 1 && at < 0; l--)
+                {
+                    string stem = w.Substring(0, l);
+                    if (l < w.Length && !Ui.HasKanji(stem)) break;       // kana-only stems are too ambiguous
+                    int i = text.IndexOf(stem, cursor, StringComparison.Ordinal);
+                    if (i >= 0) { at = i; len = l; }
+                }
+                if (at < 0 && !string.IsNullOrEmpty(part.Reading))        // written in kana in this sentence
+                {
+                    int i = text.IndexOf(part.Reading, cursor, StringComparison.Ordinal);
+                    if (i >= 0) { at = i; len = part.Reading.Length; }
+                }
+                if (at < 0) continue;
+                if (at > cursor) box.Inlines.Add(new Run(text.Substring(cursor, at - cursor)));
+                box.Inlines.Add(WordLink(text.Substring(at, len), part));
+                cursor = at + len;
+            }
+            if (cursor < text.Length) box.Inlines.Add(new Run(text.Substring(cursor)));
+            return box;
+        }
+
+        // A word of the sentence: dotted underline, turns green under the mouse. It is a plain Run (not a Hyperlink: a
+        // Hyperlink swallows the mouse-down, so a text selection could never START on a word). SelText sees the click
+        // and runs the action stored in Tag.
+        static Inline WordLink(string shown, SentencePart part)
+        {
+            string writing = part.Writing, reading = part.Reading;
+            var run = new Run(shown) { Cursor = System.Windows.Input.Cursors.Hand, Tag = new Action(() => Preview.ShowWord(writing, reading)) };
+            run.TextDecorations = new TextDecorationCollection
+            {
+                // the recipe from the WPF documentation: a pen in "font recommended" units, offset 0 = the normal underline position
+                new TextDecoration(TextDecorationLocation.Underline, new Pen(Brushes.Gray, 1) { DashStyle = DashStyles.Dot }, 0,
+                    TextDecorationUnit.FontRecommended, TextDecorationUnit.FontRecommended),
+            };
+            run.MouseEnter += (s, e) => run.SetResourceReference(TextElement.ForegroundProperty, "Accent");
+            run.MouseLeave += (s, e) => run.ClearValue(TextElement.ForegroundProperty);
+            return run;
+        }
+
         UIElement SentenceBlock(Sentence s)
         {
             var box = new StackPanel { Margin = new Thickness(0, 0, 0, 14) };
-            box.Children.Add(Ui.Text(s.MainText, 22, "Fg", null, null, true));
+            box.Children.Add(SentenceText(s));
             foreach (var t in s.Translations)
             {
                 var line = new Grid { Margin = new Thickness(0, 3, 0, 0) };
@@ -473,7 +525,7 @@ namespace TakobotoApp
                 var flag = Ui.Flag(t.Language, 16);
                 flag.Margin = new Thickness(0, 3, 8, 0);
                 line.Children.Add(flag);
-                var tx = Ui.Text(t.Text, 15, "FgMuted");
+                var tx = Ui.SText(t.Text, 15, "FgMuted");
                 Grid.SetColumn(tx, 1);
                 line.Children.Add(tx);
                 box.Children.Add(line);

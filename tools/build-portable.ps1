@@ -1,4 +1,4 @@
-# Builds the portable edition: assembles <Root>\build\package\Takoboto-Portable, zips it, and updates <Root>\Takoboto-Portable.
+﻿# Builds the portable edition: assembles <Root>\build\package\Takoboto-Portable, zips it, and updates <Root>\Takoboto-Portable.
 #   powershell -ExecutionPolicy Bypass -File build-portable.ps1
 # Safe while a copy of the program is running (see step 5).
 param([string]$Root = "", [switch]$NoZip)
@@ -50,6 +50,10 @@ Files
 Needs Microsoft .NET Framework 4.8, which is already part of Windows 10 (1903 or newer) and Windows 11.
 
 A word opens in tabs: Overview (writing, reading, meanings, phrases) | Forms | Kanji.
+Search works while you type: "nih" already finds the words starting with に-, "食b" finds 食べ...; the list keeps
+loading more words as you scroll down.
+All text in the word card can be selected and copied. Click a word of an example phrase (dotted underline), or
+select a word, and a small preview (reading + meaning) pops up; click the preview to open that entry.
 Keys:  Ctrl+F or Ctrl+1 search   Ctrl+2 history   Ctrl+3 favorites   Ctrl+4 my lists   Ctrl+5 kanji by radicals
 Theme (light / dark / like Windows) and the extra languages: Settings.
 '@
@@ -73,6 +77,9 @@ TAKOBOTO - портативная версия
 Нужен Microsoft .NET Framework 4.8 - он уже входит в Windows 10 (1903 и новее) и Windows 11.
 
 Слово открывается во вкладках: Overview (написание, чтение, значения, примеры) | Forms (формы) | Kanji (кандзи).
+Поиск работает по мере набора: "nih" сразу находит слова на に-, "食b" находит 食べ...; список подгружается при прокрутке вниз.
+Любой текст в карточке слова можно выделить и скопировать. Нажмите на слово в примере (оно подчёркнуто точками)
+или выделите слово - появится маленькая подсказка (чтение и значение); клик по подсказке открывает статью.
 Клавиши: Ctrl+F или Ctrl+1 поиск, Ctrl+2 история, Ctrl+3 избранное, Ctrl+4 мои списки, Ctrl+5 кандзи по радикалам.
 Тема (светлая / тёмная / как в Windows) и дополнительные языки - в разделе Settings.
 '@

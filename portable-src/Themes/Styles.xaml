@@ -147,6 +147,17 @@
     </Setter>
   </Style>
 
+  <!-- ===== selectable text: a RichTextBox with no chrome at all ===== -->
+  <Style TargetType="local:SelText">
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="local:SelText">
+          <ScrollViewer x:Name="PART_ContentHost" Focusable="False" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled"/>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
   <!-- ===== tab of the word card (underline style) ===== -->
   <Style x:Key="TabButton" TargetType="RadioButton">
     <Setter Property="Foreground" Value="{DynamicResource FgMuted}"/>

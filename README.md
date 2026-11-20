@@ -10,6 +10,8 @@ It is a new user interface on top of the original Takoboto dictionary engine.
 
 - Instant search: Japanese (kanji, kana, romaji) and English / French / German / Russian; conjugated verbs and adjectives are recognised; matches are highlighted
 - A word opens in tabs: **Overview** (writings, reading, meanings with language flags, example phrases) | **Forms** (conjugations) | **Kanji** (readings, meanings, stroke-order diagrams)
+- Search as you type: romaji typed letter by letter (`nih` already lists にほ…), kanji mixed with Latin letters (`食b` → 食べ…), and a result list that keeps loading as you scroll (no 32-result cap)
+- All text in the word card is selectable; click a word of an example phrase (or select any word) to get a small pop-up with its reading and meaning, click the pop-up to open the entry
 - Find kanji by radicals
 - History, favorites and your own lists
 - Light / dark / "like Windows" theme, switched live; soft grey-green light theme and green accent (easy on the eyes)
@@ -45,7 +47,7 @@ powershell -ExecutionPolicy Bypass -File tools\build-portable.ps1
 | `tools/shot.ps1`, `runshot.ps1`, `drive.ps1` | test helpers: capture the app window, click through the UI via UI Automation |
 
 The app accepts a few switches for testing: `--theme dark|light`, `--page search|history|favorites|lists|kanji|settings|about`,
-`--search <text>`, `--radicals a,b`, `--tab overview|forms|kanji`.
+`--search <text>`, `--radicals a,b`, `--tab overview|forms|kanji`, `--word-test click:<word>|select:<word>`.
 
 ## Credits
 
@@ -62,7 +64,10 @@ Takoboto data and are used under their own licences.
 
 Что умеет: быстрый поиск (японский, английский, французский, немецкий, русский), карточка слова во вкладках
 (Overview / Forms / Kanji), поиск кандзи по радикалам, история, избранное и свои списки, светлая / тёмная тема
-(переключается сразу), настройки хранятся в папке `userdata` рядом с программой.
+(переключается сразу), настройки хранятся в папке `userdata` рядом с программой. Поиск работает по мере набора
+(`nih` сразу показывает слова на に…, `食b` находит 食べ…), список подгружается при прокрутке. Текст в карточке можно
+выделять; клик по слову в примере (или выделение слова) показывает маленькую подсказку с чтением и значением,
+клик по подсказке открывает статью.
 
 **Чего здесь нет:** словарный движок, сам словарь и рисунки принадлежат автору Takoboto, поэтому в репозиторий
 они не входят. Нужен ваш собственный установщик оригинального Takoboto: скрипт `tools\prepare-from-original.ps1`
