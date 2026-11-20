@@ -61,15 +61,15 @@ namespace TakobotoApp
             holder.Children.Add(root);
             scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = holder };
 
-            // tab strip (top left) with the word actions on the right
+            // tab strip (top left); the favourite and add-to-list buttons stand right after the last tab
             tabs = new StackPanel { Orientation = Orientation.Horizontal };
-            actions = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+            actions = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
             var bar = new Grid { Margin = new Thickness(12, 0, 16, 0) };
             bar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             bar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             bar.Children.Add(tabs);
-            Grid.SetColumn(actions, 2);
+            Grid.SetColumn(actions, 1);
             bar.Children.Add(actions);
             tabBar = new Border { BorderThickness = new Thickness(0, 0, 0, 1), Child = bar, Visibility = Visibility.Collapsed };
             tabBar.SetResourceReference(Border.BorderBrushProperty, "Line");
@@ -187,10 +187,10 @@ namespace TakobotoApp
             bool first = true;
             foreach (var p in w.MainEntries ?? new List<WordPart>())
                 { stack.Children.Add(PartBlock(p, first ? 36 : 26)); first = false; }
-            return Ui.Card(stack);
+            return CardWithCopy(stack, () => BlockText(w.MainEntries), "Copy writing");
         }
 
-        // ---- favourite / add to list / copy (shown in the tab strip, so they work on every tab) --------------------
+        // ---- favourite / add to list (shown in the tab strip, so they work on every tab) --------------------
         void BuildActions(Word w, WordTag tag)
         {
             var star = new Button { Style = (Style)FindResource("IconButton") };
@@ -211,10 +211,6 @@ namespace TakobotoApp
             add.Click += (s, e) => ShowListMenu(add, tag);
             actions.Children.Add(add);
 
-            var copy = new Button { Style = (Style)FindResource("IconButton"), Content = "", ToolTip = "Copy" };
-            AutomationProperties.SetName(copy, "Copy");
-            copy.Click += (s, e) => CopyWord(w);
-            actions.Children.Add(copy);
         }
 
         void ShowListMenu(FrameworkElement anchor, WordTag tag)
@@ -233,26 +229,41 @@ namespace TakobotoApp
             Ui.ShowMenu(anchor, items);
         }
 
-        static void CopyWord(Word w)
+        // ---- a copy button for ONE block (the writings, the readings): it copies just that block's Japanese text ------------------
+        static string BlockText(IEnumerable<WordPart> parts)
         {
-            try
+            var all = (parts ?? new List<WordPart>()).ToList();
+            var main = all.Where(p => p.IsPrimary).ToList();   // the usual forms; the rare ones can still be selected by hand
+            return string.Join("、", (main.Count > 0 ? main : all).Select(p => p.Text));
+        }
+
+        /// <summary>A card with a small copy button in its top right corner. For a moment after the click the button shows a check mark.</summary>
+        static UIElement CardWithCopy(UIElement content, Func<string> text, string tip)
+        {
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            grid.Children.Add(content);
+
+            var btn = new Button
             {
-                var sb = new System.Text.StringBuilder();
-                sb.Append(string.Join("、", (w.MainEntries ?? new List<WordPart>()).Where(p => p.IsPrimary).Select(p => p.Text)));
-                if (w.Readings != null && w.Readings.Count > 0) sb.Append("  (" + string.Join("、", w.Readings.Where(p => p.IsPrimary).Select(p => p.Text)) + ")");
-                sb.AppendLine();
-                int n = 1;
-                foreach (var m in w.Meanings ?? new List<WordMeaning>())
-                {
-                    var shown = Langs.Pick(m.Parts, p => p.Language);   // the first language that is shown
-                    var first = shown.Count > 0 ? shown[0].Language : Takoboto.Database.Language.English;
-                    var en = shown.Where(p => p.Language == first).Select(p => p.Text);
-                    sb.AppendLine((w.Meanings.Count > 1 ? n + ". " : "") + string.Join("; ", en));
-                    n++;
-                }
-                Clipboard.SetText(sb.ToString().Trim());
-            }
-            catch { }
+                Style = (Style)Application.Current.FindResource("IconButton"), Content = "", FontSize = 14, Width = 30, Height = 30,
+                VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(8, -6, -6, 0), ToolTip = tip,
+            };
+            AutomationProperties.SetName(btn, tip);
+            var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1300) };
+            timer.Tick += (s, e) => { timer.Stop(); btn.Content = ""; btn.ClearValue(Control.ForegroundProperty); };
+            btn.Click += (s, e) =>
+            {
+                try { Clipboard.SetText(text()); }
+                catch (Exception ex) { App.Log(ex); return; }   // the clipboard can be busy: then nothing is copied and no check mark is shown
+                btn.Content = "";
+                btn.SetResourceReference(Control.ForegroundProperty, "Accent");
+                timer.Stop(); timer.Start();
+            };
+            Grid.SetColumn(btn, 1);
+            grid.Children.Add(btn);
+            return Ui.Card(grid);
         }
 
         // ---- a written form (kanji / kana) as in the original app ---------------------------------------------
@@ -280,7 +291,7 @@ namespace TakobotoApp
             var stack = new StackPanel();
             stack.Children.Add(Ui.Title("Reading"));
             foreach (var p in w.Readings) stack.Children.Add(PartBlock(p, 28));
-            return Ui.Card(stack);
+            return CardWithCopy(stack, () => BlockText(w.Readings), "Copy reading");
         }
 
         // ---- meanings ------------------------------------------------------------------------------------------
