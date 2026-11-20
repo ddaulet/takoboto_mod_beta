@@ -41,6 +41,7 @@ namespace TakobotoApp
             Closing += (a, b) => SaveWindow();
             Loaded += (a, b) => search.FocusBox();
             PreviewKeyDown += OnKey;
+            PreviewMouseDown += OnMouseNav;
             PreviewTextInput += OnTextInput;
             ready = true;
             Show(search);
@@ -223,8 +224,22 @@ namespace TakobotoApp
             search.TypeFromAnywhere(e.Text);
         }
 
+        // back / forward between the cards: Alt+Left / Alt+Right, or the side buttons of the mouse
+        void OnMouseNav(object sender, MouseButtonEventArgs e)
+        {
+            if (!SearchPageActive) return;
+            if (e.ChangedButton == MouseButton.XButton1) { search.GoBack(); e.Handled = true; }
+            else if (e.ChangedButton == MouseButton.XButton2) { search.GoForward(); e.Handled = true; }
+        }
+
         void OnKey(object sender, KeyEventArgs e)
         {
+            if (Keyboard.Modifiers == ModifierKeys.Alt && SearchPageActive)
+            {
+                var k = e.Key == Key.System ? e.SystemKey : e.Key;
+                if (k == Key.Left) { search.GoBack(); e.Handled = true; return; }
+                if (k == Key.Right) { search.GoForward(); e.Handled = true; return; }
+            }
             if (e.Key == Key.Back && Keyboard.Modifiers == ModifierKeys.None && SearchPageActive && !IsTextEntry(Keyboard.FocusedElement))
             {
                 search.BackspaceFromAnywhere();

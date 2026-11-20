@@ -25,6 +25,12 @@ namespace TakobotoApp
         readonly Border tabBar;
         readonly StackPanel tabs;
         readonly StackPanel actions;
+        readonly Button navBack, navForward;
+        readonly StackPanel navPanel;
+        bool navShown;   // the search page uses back / forward arrows; the other pages do not
+
+        /// <summary>The arrows at the left of the tab strip were pressed (only the search page listens).</summary>
+        public event Action NavBack, NavForward;
         readonly ScrollViewer scroll;
         readonly StackPanel root;
         readonly string group = Guid.NewGuid().ToString("N");   // radio group of this view's tabs (several views exist)
@@ -65,11 +71,21 @@ namespace TakobotoApp
             tabs = new StackPanel { Orientation = Orientation.Horizontal };
             actions = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
             var bar = new Grid { Margin = new Thickness(12, 0, 16, 0) };
-            bar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            bar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            bar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });   // back / forward
+            bar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });   // tabs
+            bar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });   // favourite, add to list
             bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var nav = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
+            navBack = NavButton(Icons.ArrowLeft, "Back", "Back to the previous card (Alt+Left)", () => { if (NavBack != null) NavBack(); });
+            navForward = NavButton(Icons.ArrowRight, "Forward", "Forward (Alt+Right)", () => { if (NavForward != null) NavForward(); });
+            nav.Children.Add(navBack);
+            nav.Children.Add(navForward);
+            nav.Visibility = Visibility.Collapsed;
+            navPanel = nav;
+            bar.Children.Add(nav);
+            Grid.SetColumn(tabs, 1);
             bar.Children.Add(tabs);
-            Grid.SetColumn(actions, 1);
+            Grid.SetColumn(actions, 2);
             bar.Children.Add(actions);
             tabBar = new Border { BorderThickness = new Thickness(0, 0, 0, 1), Child = bar, Visibility = Visibility.Collapsed };
             tabBar.SetResourceReference(Border.BorderBrushProperty, "Line");
@@ -86,11 +102,31 @@ namespace TakobotoApp
 
         public WordTag Current { get { return current; } }
 
+        static Button NavButton(Geometry icon, string name, string tip, Action click)
+        {
+            var b = new Button { Style = (Style)Application.Current.FindResource("IconButton"), Content = Icons.Make(icon, 20, null), ToolTip = tip };
+            AutomationProperties.SetName(b, name);
+            b.Click += (s, e) => click();
+            return b;
+        }
+
+        /// <summary>Show the back / forward arrows at the left of the tab strip (search page) and say which of them can be used.</summary>
+        public void SetNav(bool canBack, bool canForward)
+        {
+            navShown = true;
+            navPanel.Visibility = Visibility.Visible;
+            if (tabBar.Visibility == Visibility.Collapsed) tabBar.Visibility = Visibility.Visible;
+            navBack.IsEnabled = canBack; navBack.Opacity = canBack ? 1 : 0.3;
+            navForward.IsEnabled = canForward; navForward.Opacity = canForward ? 1 : 0.3;
+        }
+
         public void Clear()
         {
             token++;
             current = null;
-            tabBar.Visibility = Visibility.Collapsed;
+            tabs.Children.Clear();
+            actions.Children.Clear();
+            tabBar.Visibility = navShown ? Visibility.Visible : Visibility.Collapsed;   // the arrows stay: "back" works from an empty page too
             root.Children.Clear();
             root.Children.Add(Ui.SText("Select a word to see its details.", 16, "FgMuted", null, new Thickness(0, 40, 0, 0)));
         }
@@ -100,7 +136,8 @@ namespace TakobotoApp
             if (tag == null) { Clear(); return; }
             int my = ++token;
             current = tag;
-            if (tabBar.Visibility == Visibility.Visible) tabBar.Visibility = Visibility.Hidden;   // keep the space, avoid a jump
+            tabs.Visibility = Visibility.Hidden;      // keep the space, avoid a jump (the arrows stay)
+            actions.Visibility = Visibility.Hidden;
             root.Children.Clear();
             root.Children.Add(Ui.SText("Loading…", 16, "FgMuted", null, new Thickness(0, 40, 0, 0)));
             Word w = null;
@@ -110,7 +147,9 @@ namespace TakobotoApp
             root.Children.Clear();
             if (w == null)
             {
-                tabBar.Visibility = Visibility.Collapsed;
+                tabs.Children.Clear();
+                actions.Children.Clear();
+                tabBar.Visibility = navShown ? Visibility.Visible : Visibility.Collapsed;
                 root.Children.Add(Ui.SText("This word could not be loaded.", 16, "FgMuted"));
                 return;
             }
@@ -156,6 +195,8 @@ namespace TakobotoApp
                 tabs.Children.Add(rb);
                 if (key == first) firstButton = rb;
             }
+            tabs.Visibility = Visibility.Visible;
+            actions.Visibility = Visibility.Visible;
             tabBar.Visibility = Visibility.Visible;
             programmatic = true;
             firstButton.IsChecked = true;

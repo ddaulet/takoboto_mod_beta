@@ -23,6 +23,12 @@ namespace TakobotoApp
         int limit = FirstLimit;
         string currentQuery = "";
         bool truncated, loadingMore;
+        // back / forward: every card that was shown is a place (the query of the list + the word); a place made by typing is replaced
+        // by the next letter, a place made by a click (list, word in a sentence, random word) stays
+        class NavEntry { public string Query; public WordTag Tag; public bool Auto; }
+        readonly List<NavEntry> nav = new List<NavEntry>();
+        int navPos;              // the place that is shown; nav.Count = the empty page
+        bool restoring;          // a back / forward is bringing a place back: it is not a new place
         int pendingSelectId;     // select this word once the next search has filled the list (see OpenWord)
 
         // ---- the five input modes under the search box ------------------------------------------------------------
@@ -44,6 +50,9 @@ namespace TakobotoApp
             keyboard.Modify += kind => ModifyLast(kind);
             keyboard.LayoutChanged += () => { Store.Settings.InputLayout = keyboard.Layout; Store.SaveSettings(); };
             PanelHost.Content = keyboard;
+            Detail.NavBack += GoBack;
+            Detail.NavForward += GoForward;
+            Detail.SetNav(false, false);
             picker = new RadicalPicker();
             picker.KanjiChosen += k => InsertCandidate(k);   // a click on a kanji puts it into the search box (selected)
             picker.DoneRequested += () => CloseModes();
@@ -355,13 +364,17 @@ namespace TakobotoApp
                 Hint.Visibility = Visibility.Visible;
                 NothingFound.Visibility = Visibility.Collapsed;
                 pendingSelectId = 0;
+                restoring = false;
+                navPos = nav.Count;   // the empty page: "back" goes to the last place
+                UpdateNav();
                 return;
             }
             Hint.Visibility = Visibility.Collapsed;
             SearchOutcome r = null;
             try { r = await Task.Run(() => Engine.Search(q, FirstLimit)); }
             catch (Exception ex) { App.Log(ex); }
-            if (my != generation || r == null) return;   // a newer search is already running
+            if (my != generation) return;   // a newer search is already running
+            if (r == null) { restoring = false; return; }
 
             currentQuery = q;
             truncated = r.Truncated;
@@ -369,13 +382,48 @@ namespace TakobotoApp
             foreach (var t in r.Exact.Concat(r.Partial)) items.Add(WordItem.From(t));
             NothingFound.Visibility = items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             UpdateStatus();
-            if (items.Count == 0) { Detail.Clear(); pendingSelectId = 0; return; }
+            if (items.Count == 0) { Detail.Clear(); pendingSelectId = 0; restoring = false; UpdateNav(); return; }
 
             var wanted = pendingSelectId > 0 ? items.FirstOrDefault(i => i.Tag.WordId == pendingSelectId) : null;
             pendingSelectId = 0;
             if (wanted != null) { List.SelectedItem = wanted; List.ScrollIntoView(wanted); }   // chosen by the user: counts for the history
             else { auto = true; List.SelectedIndex = 0; auto = false; List.ScrollIntoView(items[0]); }   // best match shown right away
+            restoring = false;
         }
+
+        // ---- back / forward ------------------------------------------------------------------------------------------
+        void Record(WordTag tag, bool typed)
+        {
+            string q = currentQuery ?? "";
+            if (navPos < nav.Count)
+            {
+                var cur = nav[navPos];
+                if (cur.Tag.WordId == tag.WordId && cur.Query == q) { if (!typed) cur.Auto = false; UpdateNav(); return; }
+                if (cur.Auto && typed) { cur.Query = q; cur.Tag = tag; nav.RemoveRange(navPos + 1, nav.Count - navPos - 1); UpdateNav(); return; }   // typing on: the same place
+                nav.RemoveRange(navPos + 1, nav.Count - navPos - 1);   // a new place: what was "forward" is gone
+            }
+            nav.Add(new NavEntry { Query = q, Tag = tag, Auto = typed });
+            if (nav.Count > 100) nav.RemoveAt(0);
+            navPos = nav.Count - 1;
+            UpdateNav();
+        }
+
+        void UpdateNav() { Detail.SetNav(navPos > 0, navPos < nav.Count - 1); }
+
+        void Go(int i)
+        {
+            if (i < 0 || i >= nav.Count) return;
+            CloseModes();
+            navPos = i;
+            var e = nav[i];
+            restoring = true;
+            UpdateNav();
+            pendingSelectId = e.Tag.WordId;
+            SetQuery(e.Query);   // the same list and the same card as then
+        }
+
+        public void GoBack() { Go(navPos - 1); }
+        public void GoForward() { Go(navPos + 1); }
 
         // ---- more results while scrolling --------------------------------------------------------------------------
         void List_ScrollChanged(object sender, ScrollChangedEventArgs e)
@@ -434,6 +482,8 @@ namespace TakobotoApp
             var it = List.SelectedItem as WordItem;
             if (it == null) return;
             Detail.Show(it.Tag);
+            if (restoring) return;   // back / forward: not a new place, already in the history
+            Record(it.Tag, auto);
             if (!auto) Store.AddHistory(it.Tag);
         }
 

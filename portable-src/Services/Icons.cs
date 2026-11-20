@@ -20,6 +20,10 @@ namespace TakobotoApp
         // pronunciation: a loudspeaker with three sound lines
         public static readonly Geometry Speaker = G("M3 9.5 H6.5 L11 5.5 V18.5 L6.5 14.5 H3 Z M14.2 9.6 A3.2 3.2 0 0 1 14.2 14.4 M16.6 7.4 A6.2 6.2 0 0 1 16.6 16.6 M19 5.2 A9.2 9.2 0 0 1 19 18.8");
 
+        // back / forward between the cards
+        public static readonly Geometry ArrowLeft = G("M19 12 H5 M11 6 L5 12 L11 18");
+        public static readonly Geometry ArrowRight = G("M5 12 H19 M13 6 L19 12 L13 18");
+
         // the round buttons
         public static readonly Geometry Undo = G("M8 5 L3 10 L8 15 M3 10 H14 A5.5 5.5 0 0 1 14 21 H8");
         public static readonly Geometry Check = G("M5 12.5 L10 17.5 L19 7");

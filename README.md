@@ -23,6 +23,7 @@ It is a new user interface on top of the original Takoboto dictionary engine.
 - Pronunciation: a loudspeaker next to the reading and after every Japanese example sentence reads it aloud, **offline** (speech synthesis by [VOICEVOX CORE](https://github.com/VOICEVOX/voicevox_core), voices "VOICEVOX Nemo"; a female and a male voice, chosen in Settings). The voice files are the folder `voice` next to `Takoboto.exe` (about 200 MB); without it the program works and simply has no loudspeaker buttons
 - On the search page every key you press goes into the search box, wherever the focus is
 - The search box and the results are in the left column; the word card takes the whole right side
+- Back / forward arrows at the left of the tab strip of the word card (also Alt+Left / Alt+Right and the side buttons of the mouse): a click on a word in a sentence, on the random word or on a result opens another card, and one click brings the previous card back - with the search and the list it came from
 - History, favorites and your own lists
 - Translation languages (Settings): tick English / French / German / Russian; where a word, meaning or phrase has nothing in the ticked languages, the languages it does have are shown instead (never an empty meaning); one flag per language (in the meanings: once for the whole word), not one per line
 - "Random word" button under Search (Ctrl+R): a random entry of the whole dictionary, a new one on every press
