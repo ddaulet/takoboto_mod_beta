@@ -28,14 +28,12 @@
         <Button x:Name="ClearBtn" Style="{StaticResource IconButton}" Content="&#xE711;" HorizontalAlignment="Right" Margin="0,0,7,0" Visibility="Collapsed" Click="Clear_Click" ToolTip="Clear (Esc)" AutomationProperties.Name="Clear search" FontSize="12"/>
       </Grid>
 
-      <!-- the five input modes (like Pleco): handwriting, radicals, keyboard, voice, photo. Voice and photo are placeholders. -->
+      <!-- the three input modes: handwriting, radicals, keyboard -->
       <Border Grid.Row="1" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1">
-        <UniformGrid Columns="5" Margin="10,0">
+        <UniformGrid Columns="3" Margin="10,0">
           <RadioButton x:Name="ModeBrush" Style="{StaticResource ModeTab}" Tag="{x:Static local:Icons.Pen}" GroupName="searchmode" ToolTip="Handwriting - write a kanji (click again to close)" AutomationProperties.Name="Handwriting" Checked="Mode_Changed" Unchecked="Mode_Changed" Click="Mode_Click"/>
           <RadioButton x:Name="ModeRadicals" Style="{StaticResource ModeTab}" Tag="{x:Static local:Icons.Puzzle}" GroupName="searchmode" ToolTip="Search by radical (Ctrl+5) - click again to close" AutomationProperties.Name="Search by radical" Checked="Mode_Changed" Unchecked="Mode_Changed" Click="Mode_Click"/>
           <RadioButton x:Name="ModeKeyboard" Style="{StaticResource ModeTab}" Tag="{x:Static local:Icons.Keyboard}" GroupName="searchmode" ToolTip="Japanese keyboard: kana keys, and your own keyboard types romaji → kana - click again to close" AutomationProperties.Name="Keyboard" Checked="Mode_Changed" Unchecked="Mode_Changed" Click="Mode_Click"/>
-          <Button x:Name="ModeVoice" Style="{StaticResource ModeTabDummy}" Tag="{x:Static local:Icons.Microphone}" ToolTip="Voice - coming later" AutomationProperties.Name="Voice (coming later)" Click="Dummy_Click"/>
-          <Button x:Name="ModePhoto" Style="{StaticResource ModeTabDummy}" Tag="{x:Static local:Icons.Camera}" ToolTip="Photo - coming later" AutomationProperties.Name="Photo (coming later)" Click="Dummy_Click"/>
         </UniformGrid>
       </Border>
 

@@ -106,8 +106,6 @@ namespace TakobotoApp
             ((RadioButton)sender).IsChecked = false;                  // pressed again: switch it off
         }
 
-        void Dummy_Click(object sender, RoutedEventArgs e) { }   // handwriting, voice and photo: placeholders for now
-
         void ShowPanel()
         {
             PanelBorder.Visibility = mode == Mode.Keyboard ? Visibility.Visible : Visibility.Collapsed;

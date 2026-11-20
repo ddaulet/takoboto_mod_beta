@@ -453,25 +453,6 @@
       </Setter.Value>
     </Setter>
   </Style>
-  <!-- the same, for the buttons that do nothing yet (handwriting, voice, photo) -->
-  <Style x:Key="ModeTabDummy" TargetType="Button">
-    <Setter Property="Foreground" Value="{DynamicResource FgFaint}"/>
-    <Setter Property="Cursor" Value="Arrow"/>
-    <Setter Property="Focusable" Value="False"/>
-    <Setter Property="Template">
-      <Setter.Value>
-        <ControlTemplate TargetType="Button">
-          <Border x:Name="Bd" Background="Transparent" BorderThickness="0,0,0,2" BorderBrush="Transparent" Height="44">
-            <Viewbox Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center">
-              <Path Data="{TemplateBinding Tag}" Width="24" Height="24" Stretch="None" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
-                    Stroke="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}"/>
-            </Viewbox>
-          </Border>
-        </ControlTemplate>
-      </Setter.Value>
-    </Setter>
-  </Style>
-
   <!-- ===== list boxes ===== -->
   <Style x:Key="PlainList" TargetType="ListBox">
     <Setter Property="Background" Value="Transparent"/>
