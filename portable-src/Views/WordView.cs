@@ -56,7 +56,7 @@ namespace TakobotoApp
             // the content is as wide as the pane up to 880 px and always sits at the LEFT edge (next to the result list);
             // a one-column grid with a MaxWidth does that, a centred StackPanel with MaxWidth would float in the middle
             root = new StackPanel();
-            var holder = new Grid { Margin = new Thickness(26, 20, 24, 28), HorizontalAlignment = HorizontalAlignment.Stretch };
+            var holder = new Grid { Margin = new Thickness(14, 12, 14, 14), HorizontalAlignment = HorizontalAlignment.Stretch };
             holder.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MaxWidth = 960 });
             holder.Children.Add(root);
             scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = holder };
@@ -258,7 +258,7 @@ namespace TakobotoApp
         // ---- a written form (kanji / kana) as in the original app ---------------------------------------------
         UIElement PartBlock(WordPart p, double size)
         {
-            var tb = new SelText { FontFamily = Ui.JpFont, Margin = new Thickness(0, 0, 0, 6) };
+            var tb = new SelText { FontFamily = Ui.JpFont, Margin = new Thickness(0, 0, 0, 3) };
             string brush = p.HasInfoMarkedSecondary ? "FgFaint" : (p.IsSecondary ? "FgMuted" : "Fg");
             tb.Inlines.Add(Ui.Run(p.Text, brush, size));
             if (!Ui.HasKanji(p.Text))
@@ -293,7 +293,7 @@ namespace TakobotoApp
             foreach (var m in w.Meanings)
             {
                 n++;
-                var row = new Grid { Margin = new Thickness(0, 0, 0, 12) };
+                var row = new Grid { Margin = new Thickness(0, 0, 0, 7) };
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(w.Meanings.Count > 1 ? 34 : 0) });
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                 if (w.Meanings.Count > 1)
@@ -319,7 +319,7 @@ namespace TakobotoApp
         /// entries, not one text in three rows).</summary>
         static UIElement Hairline()
         {
-            var line = new Border { Height = 1, Margin = new Thickness(0, 3, 0, 3), Opacity = 0.85, IsHitTestVisible = false };
+            var line = new Border { Height = 1, Margin = new Thickness(0, 2, 0, 2), Opacity = 0.85, IsHitTestVisible = false };
             line.SetResourceReference(Border.BackgroundProperty, "Line");
             return line;
         }
@@ -380,7 +380,7 @@ namespace TakobotoApp
             var panel = new StackPanel();
             foreach (var group in lines.GroupBy(l => l.Lang))
             {
-                var row = new Grid { Margin = new Thickness(0, panel.Children.Count == 0 ? 0 : 6, 0, 0) };
+                var row = new Grid { Margin = new Thickness(0, panel.Children.Count == 0 ? 0 : 4, 0, 0) };
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                 var flag = Ui.Flag(group.Key, flagSize);
@@ -429,7 +429,7 @@ namespace TakobotoApp
 
         UIElement FormBlock(string label, WordForm f)
         {
-            var box = new StackPanel { Margin = new Thickness(0, 0, 14, 14) };
+            var box = new StackPanel { Margin = new Thickness(0, 0, 12, 10) };
             box.Children.Add(Ui.SText(label, 12.5, "FgMuted", FontWeights.SemiBold));
             var tb = new SelText { FontFamily = Ui.JpFont };
             tb.Inlines.Add(Ui.Run(f.Plain, "Fg", 22));
@@ -449,7 +449,7 @@ namespace TakobotoApp
             for (int i = 0; i < w.Kanjis.Count; i++)
             {
                 var k = w.Kanjis[i];
-                var block = new Grid { Margin = new Thickness(0, 0, 0, i == w.Kanjis.Count - 1 ? 0 : 18), Opacity = k.Opacity };
+                var block = new Grid { Margin = new Thickness(0, 0, 0, i == w.Kanjis.Count - 1 ? 0 : 12), Opacity = k.Opacity };
                 block.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(86) });
                 block.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                 block.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -475,7 +475,7 @@ namespace TakobotoApp
 
                 if (k.KanjiStrokes != null && k.KanjiStrokes.Count > 0)
                 {
-                    var steps = new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
+                    var steps = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
                     foreach (var step in k.KanjiStrokes) steps.Children.Add(StrokeStep(step));
                     Grid.SetRow(steps, 1);
                     Grid.SetColumn(steps, 0);
@@ -644,10 +644,10 @@ namespace TakobotoApp
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            var left = new Border { BorderThickness = new Thickness(0, 0, 1, 0), Padding = new Thickness(0, 11, 16, 11), Child = SentenceText(s) };
+            var left = new Border { BorderThickness = new Thickness(0, 0, 1, 0), Padding = new Thickness(0, 6, 12, 6), Child = SentenceText(s) };
             left.SetResourceReference(Border.BorderBrushProperty, "Line");
 
-            var right = new StackPanel { Margin = new Thickness(16, 11, 0, 11) };
+            var right = new StackPanel { Margin = new Thickness(12, 6, 0, 6) };
             var shown = Langs.Pick(s.Translations, t => t.Language);   // the wanted languages; everything if there is none of them
             right.Children.Add(TranslationBlock(shown.Select(t => new TLine { Lang = t.Language, Text = t.Text }), 16, 15, false));
             Grid.SetColumn(right, 1);

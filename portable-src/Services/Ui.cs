@@ -77,16 +77,16 @@ namespace TakobotoApp
 
         public static TextBlock Title(string s)
         {
-            return Text(s, 15, "Accent", FontWeights.SemiBold, new Thickness(2, 6, 0, 8));
+            return Text(s, 15, "Accent", FontWeights.SemiBold, new Thickness(0, 0, 0, 5));
         }
 
         public static Border Card(UIElement content, Thickness? margin = null)
         {
             var b = new Border
             {
-                CornerRadius = new CornerRadius(10),
-                Padding = new Thickness(22, 16, 22, 18),
-                Margin = margin ?? new Thickness(0, 0, 0, 16),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(13),                       // the same on all four sides
+                Margin = margin ?? new Thickness(0, 0, 0, 8),
                 BorderThickness = new Thickness(1),
                 Child = content,
             };
