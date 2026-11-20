@@ -58,8 +58,8 @@ loading more words as you scroll down.
 Every example phrase the dictionary has for a word is shown in the card (more load as you scroll); all offline.
 All text in the word card can be selected and copied. Click a word of an example phrase (dotted underline), or
 select a word, and a small preview (reading + meaning) pops up; click the preview to open that entry.
-Keys:  Ctrl+F or Ctrl+1 search   Ctrl+2 history   Ctrl+3 favorites   Ctrl+4 my lists   Ctrl+5 kanji by radicals
-Theme (light / dark / like Windows) and the extra languages: Settings.
+Keys:  Ctrl+F or Ctrl+1 search   Ctrl+2 history   Ctrl+3 favorites   Ctrl+4 my lists   Ctrl+5 kanji by radicals   Ctrl+R random word
+Theme (light / dark / like Windows), colour scheme (golf green / original red / blue / yellow) and the extra languages: Settings.
 '@
 [System.IO.File]::WriteAllText((Join-Path $pkg "README.txt"), $readme, (New-Object System.Text.UTF8Encoding($true)))
 
@@ -85,8 +85,8 @@ TAKOBOTO - портативная версия
 Все примеры, которые есть в словаре для слова, показаны прямо в карточке (остальные подгружаются при прокрутке), всё без интернета.
 Любой текст в карточке слова можно выделить и скопировать. Нажмите на слово в примере (оно подчёркнуто точками)
 или выделите слово - появится маленькая подсказка (чтение и значение); клик по подсказке открывает статью.
-Клавиши: Ctrl+F или Ctrl+1 поиск, Ctrl+2 история, Ctrl+3 избранное, Ctrl+4 мои списки, Ctrl+5 кандзи по радикалам.
-Тема (светлая / тёмная / как в Windows) и дополнительные языки - в разделе Settings.
+Клавиши: Ctrl+F или Ctrl+1 поиск, Ctrl+2 история, Ctrl+3 избранное, Ctrl+4 мои списки, Ctrl+5 кандзи по радикалам, Ctrl+R случайное слово.
+Тема (светлая / тёмная / как в Windows), окраска (гольф-зелёная / оригинальная красная / синяя / жёлтая) и дополнительные языки - в разделе Settings.
 '@
 [System.IO.File]::WriteAllText((Join-Path $pkg "README-ru.txt"), $readmeRu, (New-Object System.Text.UTF8Encoding($true)))
 

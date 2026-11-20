@@ -198,7 +198,35 @@
           </Border>
           <ControlTemplate.Triggers>
             <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource SidebarHover}"/></Trigger>
-            <Trigger Property="IsChecked" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource SidebarSelected}"/></Trigger>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SidebarSelected}"/>
+              <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- a button that looks like a navigation item but only does something (e.g. "Random word") -->
+  <Style x:Key="NavAction" TargetType="Button">
+    <Setter Property="Foreground" Value="{DynamicResource SidebarFg}"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Margin" Value="10,2"/>
+    <Setter Property="Focusable" Value="False"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Bd" Background="Transparent" CornerRadius="8" Height="42">
+            <Grid>
+              <Grid.ColumnDefinitions><ColumnDefinition Width="46"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+              <TextBlock Text="{TemplateBinding Tag}" FontFamily="{StaticResource IconFont}" FontSize="17" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              <ContentPresenter Grid.Column="1" VerticalAlignment="Center" TextBlock.FontSize="15"/>
+            </Grid>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource SidebarHover}"/></Trigger>
+            <Trigger Property="IsPressed" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource SidebarSelected}"/></Trigger>
           </ControlTemplate.Triggers>
         </ControlTemplate>
       </Setter.Value>
@@ -272,6 +300,28 @@
               <Setter TargetName="Dot" Property="Visibility" Value="Visible"/>
             </Trigger>
             <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Ring" Property="Stroke" Value="{DynamicResource Accent}"/></Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- ===== colour scheme choice: a card with a round colour dot (Tag = the colour) and the name ===== -->
+  <Style TargetType="RadioButton" x:Key="SwatchRadio">
+    <Setter Property="Foreground" Value="{DynamicResource Fg}"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="RadioButton">
+          <Border x:Name="Card" CornerRadius="10" BorderThickness="2" Padding="12,9,16,9" Background="Transparent" BorderBrush="{DynamicResource Line}">
+            <StackPanel Orientation="Horizontal">
+              <Ellipse Width="24" Height="24" Fill="{TemplateBinding Tag}" Margin="0,0,10,0"/>
+              <ContentPresenter VerticalAlignment="Center"/>
+            </StackPanel>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Card" Property="Background" Value="{DynamicResource HoverBg}"/></Trigger>
+            <Trigger Property="IsChecked" Value="True"><Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource Accent}"/></Trigger>
           </ControlTemplate.Triggers>
         </ControlTemplate>
       </Setter.Value>

@@ -12,18 +12,24 @@
     </Grid.ColumnDefinitions>
 
     <!-- sidebar -->
-    <Border Background="{DynamicResource SidebarBg}">
+    <!-- not painted: the same colour as the page, divided from it and into groups by thin lines only -->
+    <Border Background="{DynamicResource SidebarBg}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0">
       <DockPanel>
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="20,22,12,22">
-          <Image x:Name="Logo" Width="36" Height="36" RenderOptions.BitmapScalingMode="HighQuality"/>
-          <TextBlock Text="Takoboto" FontSize="23" FontWeight="SemiBold" Foreground="{DynamicResource SidebarFg}" VerticalAlignment="Center" Margin="12,0,0,0"/>
-        </StackPanel>
-        <StackPanel DockPanel.Dock="Bottom" Margin="0,0,0,14">
-          <RadioButton x:Name="NavSettings" Style="{StaticResource NavItem}" Tag="&#xE713;" Content="Settings" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>
-          <RadioButton x:Name="NavAbout" Style="{StaticResource NavItem}" Tag="&#xE946;" Content="About" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>
-        </StackPanel>
+        <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Margin="0,0,0,10">
+          <StackPanel Orientation="Horizontal" Margin="20,22,12,22">
+            <Image x:Name="Logo" Width="36" Height="36" RenderOptions.BitmapScalingMode="HighQuality"/>
+            <TextBlock Text="Takoboto" FontSize="23" FontWeight="SemiBold" Foreground="{DynamicResource SidebarFg}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+          </StackPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="0,10,0,14">
+          <StackPanel>
+            <RadioButton x:Name="NavSettings" Style="{StaticResource NavItem}" Tag="&#xE713;" Content="Settings" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>
+            <RadioButton x:Name="NavAbout" Style="{StaticResource NavItem}" Tag="&#xE946;" Content="About" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>
+          </StackPanel>
+        </Border>
         <StackPanel>
           <RadioButton x:Name="NavSearch" Style="{StaticResource NavItem}" Tag="&#xE721;" Content="Search" GroupName="nav" IsChecked="True" Checked="Nav_Changed" Click="Nav_Changed"/>
+          <Button x:Name="NavRandom" Style="{StaticResource NavAction}" Tag="&#xE8B1;" Content="Random word" ToolTip="A random word from the whole dictionary (Ctrl+R)" Click="Random_Click"/>
           <RadioButton x:Name="NavHistory" Style="{StaticResource NavItem}" Tag="&#xE81C;" Content="History" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>
           <RadioButton x:Name="NavFavorites" Style="{StaticResource NavItem}" Tag="&#xE734;" Content="Favorites" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>
           <RadioButton x:Name="NavLists" Style="{StaticResource NavItem}" Tag="&#xE14C;" Content="My lists" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>

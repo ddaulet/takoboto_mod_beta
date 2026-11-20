@@ -12,7 +12,7 @@
     <Grid Margin="24,22,24,14">
       <TextBox x:Name="Box" AutomationProperties.Name="Search words" Height="50" Padding="48,0,44,0" FontFamily="Segoe UI, Yu Gothic UI, Meiryo UI" TextChanged="Box_TextChanged" PreviewKeyDown="Box_KeyDown"/>
       <TextBlock Text="&#xE721;" FontFamily="{StaticResource IconFont}" FontSize="17" Foreground="{DynamicResource FgMuted}" VerticalAlignment="Center" Margin="17,0,0,0" IsHitTestVisible="False"/>
-      <TextBlock x:Name="Placeholder" Text="Search Japanese (kanji, kana, romaji) or English, French, German, Russian…" FontSize="16" Foreground="{DynamicResource FgFaint}" VerticalAlignment="Center" Margin="49,0,44,0" IsHitTestVisible="False" TextTrimming="CharacterEllipsis"/>
+      <TextBlock x:Name="Placeholder" Text="Search Japanese (kanji, kana, romaji) or English, French, German, Russian…" FontSize="16" Foreground="{DynamicResource FgFaint}" VerticalAlignment="Center" Margin="58,0,44,0" IsHitTestVisible="False" TextTrimming="CharacterEllipsis"/>
       <Button x:Name="ClearBtn" Style="{StaticResource IconButton}" Content="&#xE711;" HorizontalAlignment="Right" Margin="0,0,8,0" Visibility="Collapsed" Click="Clear_Click" ToolTip="Clear (Esc)" AutomationProperties.Name="Clear search" FontSize="12"/>
     </Grid>
 

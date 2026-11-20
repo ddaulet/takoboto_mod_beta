@@ -13,11 +13,11 @@
   <SolidColorBrush x:Key="AccentFill" Color="#2C6E49"/>
   <SolidColorBrush x:Key="AccentFg" Color="#FFFFFF"/>
   <SolidColorBrush x:Key="Link" Color="#2F6F9F"/>
-  <SolidColorBrush x:Key="SidebarBg" Color="#2B4A3A"/>
-  <SolidColorBrush x:Key="SidebarFg" Color="#F0F5EF"/>
-  <SolidColorBrush x:Key="SidebarFgMuted" Color="#B9CBBF"/>
-  <SolidColorBrush x:Key="SidebarHover" Color="#1FFFFFFF"/>
-  <SolidColorBrush x:Key="SidebarSelected" Color="#36FFFFFF"/>
+  <SolidColorBrush x:Key="SidebarBg" Color="#E8ECE6"/>
+  <SolidColorBrush x:Key="SidebarFg" Color="#1E2923"/>
+  <SolidColorBrush x:Key="SidebarFgMuted" Color="#5C6A61"/>
+  <SolidColorBrush x:Key="SidebarHover" Color="#DDE4DA"/>
+  <SolidColorBrush x:Key="SidebarSelected" Color="#D1E1D3"/>
   <SolidColorBrush x:Key="HoverBg" Color="#E0E7DD"/>
   <SolidColorBrush x:Key="SelectedBg" Color="#D1E1D3"/>
   <SolidColorBrush x:Key="ScrollThumb" Color="#B6C1B3"/>

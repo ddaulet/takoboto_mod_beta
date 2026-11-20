@@ -10,6 +10,7 @@ namespace TakobotoApp
     public class AppSettings
     {
         public string Theme = "dark";            // system | light | dark  (dark on first start)
+        public string Scheme = "green";          // colour scheme: green | red | blue | yellow (see Schemes)
         public bool French = true;               // "Also display and search the following languages"
         public bool German = true;
         public bool Russian = true;

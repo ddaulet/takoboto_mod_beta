@@ -36,6 +36,7 @@ namespace TakobotoApp
             var fresh = new ResourceDictionary { Source = uri };
             if (dicts.Count > 0) dicts[0] = fresh; else dicts.Add(fresh);
             IsDark = dark;
+            Schemes.Apply(dark);   // the colour scheme goes over the theme
             foreach (Window w in Application.Current.Windows) ApplyToWindow(w);
             if (Changed != null) Changed();
         }

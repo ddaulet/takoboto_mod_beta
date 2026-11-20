@@ -182,6 +182,25 @@ namespace TakobotoApp
 
         public static WordTag TagById(int id) { lock (Gate) return db.LoadWordById(id, Options); }
 
+        // The word ids of the dictionary are the JMdict entry numbers: 1,000,000 ... 2,822,600, about half of them in use.
+        // So a random word = a random number in that range, tried again until an entry exists (2 tries on average).
+        const int FirstId = 1000000, LastId = 2830000;
+        static readonly Random rng = new Random();
+
+        /// <summary>A random entry of the whole dictionary.</summary>
+        public static WordTag RandomWord()
+        {
+            for (int i = 0; i < 500; i++)
+            {
+                lock (Gate)
+                {
+                    var t = db.LoadWordById(rng.Next(FirstId, LastId + 1), Options);
+                    if (t != null) return t;
+                }
+            }
+            return null;
+        }
+
         public static WordKanji Kanji(char c) { lock (Gate) return db.LoadKanji(c, true); }
 
         /// <summary>Most common kanji first.</summary>

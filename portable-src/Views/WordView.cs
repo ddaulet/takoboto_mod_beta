@@ -56,7 +56,7 @@ namespace TakobotoApp
             // a one-column grid with a MaxWidth does that, a centred StackPanel with MaxWidth would float in the middle
             root = new StackPanel();
             var holder = new Grid { Margin = new Thickness(26, 20, 24, 28), HorizontalAlignment = HorizontalAlignment.Stretch };
-            holder.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MaxWidth = 880 });
+            holder.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MaxWidth = 960 });
             holder.Children.Add(root);
             scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = holder };
 
@@ -504,7 +504,7 @@ namespace TakobotoApp
         // Found words become links: click -> preview pop-up.
         UIElement SentenceText(Sentence s)
         {
-            var box = new SelText { FontSize = 22, FontFamily = Ui.JpFont };
+            var box = new SelText { FontSize = 20, FontFamily = Ui.JpFont };
             string text = s.MainText ?? "";
             int cursor = 0;
             foreach (var part in s.Parts ?? new List<SentencePart>())
@@ -552,11 +552,20 @@ namespace TakobotoApp
 
         UIElement SentenceBlock(Sentence s)
         {
-            var box = new StackPanel { Margin = new Thickness(0, 0, 0, 14) };
-            box.Children.Add(SentenceText(s));
+            // like a bilingual book: the Japanese text on the left, its translations on the right, a line down the middle
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var left = new Border { BorderThickness = new Thickness(0, 0, 1, 0), Padding = new Thickness(0, 11, 16, 11), Child = SentenceText(s) };
+            left.SetResourceReference(Border.BorderBrushProperty, "Line");
+
+            var right = new StackPanel { Margin = new Thickness(16, 11, 0, 11) };
+            bool first = true;
             foreach (var t in s.Translations)
             {
-                var line = new Grid { Margin = new Thickness(0, 3, 0, 0) };
+                var line = new Grid { Margin = new Thickness(0, first ? 0 : 5, 0, 0) };
+                first = false;
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                 var flag = Ui.Flag(t.Language, 16);
@@ -565,9 +574,15 @@ namespace TakobotoApp
                 var tx = Ui.SText(t.Text, 15, "FgMuted");
                 Grid.SetColumn(tx, 1);
                 line.Children.Add(tx);
-                box.Children.Add(line);
+                right.Children.Add(line);
             }
-            return box;
+            Grid.SetColumn(right, 1);
+            grid.Children.Add(left);
+            grid.Children.Add(right);
+
+            var row = new Border { BorderThickness = new Thickness(0, 0, 0, 1), Child = grid };   // a hairline between the phrases
+            row.SetResourceReference(Border.BorderBrushProperty, "Line");
+            return row;
         }
     }
 }

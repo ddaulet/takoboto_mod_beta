@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 
 namespace TakobotoApp
@@ -21,6 +22,21 @@ namespace TakobotoApp
             CheckGerman.IsChecked = s.German;
             CheckRussian.IsChecked = s.Russian;
             DataPath.Text = Store.Dir;
+
+            // one round colour dot + name per scheme
+            foreach (var sc in Schemes.All)
+            {
+                var scheme = sc;
+                var rb = new RadioButton
+                {
+                    Style = (Style)FindResource("SwatchRadio"), Content = scheme.Name, GroupName = "scheme", Margin = new Thickness(0, 0, 12, 10),
+                    Tag = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(scheme.Swatch)),
+                    IsChecked = Schemes.Current.Id == scheme.Id,
+                };
+                AutomationProperties.SetName(rb, "Colour scheme " + scheme.Name);
+                rb.Checked += (a, b) => { if (!loading) Schemes.Set(scheme.Id); };
+                SchemePanel.Children.Add(rb);
+            }
             loading = false;
         }
 

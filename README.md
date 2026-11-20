@@ -15,7 +15,11 @@ It is a new user interface on top of the original Takoboto dictionary engine.
 - All text in the word card is selectable; click a word of an example phrase (or select any word) to get a small pop-up with its reading and meaning, click the pop-up to open the entry
 - Find kanji by radicals
 - History, favorites and your own lists
+- "Random word" button under Search (Ctrl+R): a random entry of the whole dictionary, a new one on every press
+- Example phrases like a bilingual book: Japanese on the left, translations on the right, a line down the middle
 - Light / dark / "like Windows" theme, switched live; soft grey-green light theme and green accent (easy on the eyes)
+- Colour schemes (Settings): Golf green, Original red, Blue, Yellow - independent of light / dark; the logo and the window icon follow the scheme (the icon of the .exe file in Explorer stays green)
+- The sidebar is not painted: the colour of the page, divided by thin lines
 - Portable: settings and lists live in a `userdata` folder next to `Takoboto.exe`
 
 ## Just want to use it?

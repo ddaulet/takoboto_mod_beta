@@ -16,6 +16,15 @@
         </StackPanel>
       </Border>
 
+      <!-- colour scheme (independent of light / dark) -->
+      <Border Background="{DynamicResource SurfaceBg}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="10" Padding="24,18,24,20" Margin="0,0,0,16">
+        <StackPanel>
+          <TextBlock Text="Colour scheme" FontSize="20" Foreground="{DynamicResource Fg}" Margin="0,0,0,4"/>
+          <TextBlock Text="The accent colour and the tint of the backgrounds. Works with both the light and the dark theme; changes immediately, the program icon follows." FontSize="14" Foreground="{DynamicResource FgMuted}" TextWrapping="Wrap" Margin="0,0,0,14"/>
+          <WrapPanel x:Name="SchemePanel"/>
+        </StackPanel>
+      </Border>
+
       <!-- languages -->
       <Border Background="{DynamicResource SurfaceBg}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="10" Padding="24,18,24,20" Margin="0,0,0,16">
         <StackPanel>

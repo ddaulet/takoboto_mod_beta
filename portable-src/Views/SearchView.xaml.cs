@@ -57,6 +57,18 @@ namespace TakobotoApp
             SetQuery(queryText);
         }
 
+        /// <summary>The "Random word" button: a random entry of the whole dictionary, found in the list like any other word.</summary>
+        public async void OpenRandom()
+        {
+            WordTag tag = null;
+            try { tag = await Task.Run(() => Engine.RandomWord()); }
+            catch (Exception ex) { App.Log(ex); }
+            if (tag == null) return;
+            string text = WordItem.From(tag).Main;
+            if (string.IsNullOrEmpty(text)) return;
+            OpenWord(tag, text);
+        }
+
         /// <summary>Re-runs the current search (e.g. after the language options changed).</summary>
         public void Refresh() { if (Box.Text.Trim().Length > 0) RunSearch(); }
 

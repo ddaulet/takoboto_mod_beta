@@ -21,7 +21,8 @@ namespace TakobotoApp
         {
             Instance = this;
             InitializeComponent();
-            Logo.Source = Ui.Resource("LogoLight.png");
+            Theme.Changed += UpdateBranding;   // the logo and the window icon follow the colour scheme
+            UpdateBranding();
 
             pages = new UIElement[] { search, lists, radicals, settings, about };
             foreach (var p in pages) { p.Visibility = Visibility.Collapsed; Host.Children.Add(p); }
@@ -42,6 +43,17 @@ namespace TakobotoApp
             PreviewKeyDown += OnKey;
             ready = true;
             Show(search);
+        }
+
+        void UpdateBranding()
+        {
+            try
+            {
+                Logo.Source = Schemes.Logo(Theme.IsDark);
+                var icon = Schemes.WindowIcon();
+                if (icon != null) Icon = icon;
+            }
+            catch (Exception ex) { App.Log(ex); }
         }
 
         void SaveWindow()
@@ -91,6 +103,16 @@ namespace TakobotoApp
 
         public void RefreshSearch() { search.Refresh(); }
 
+        /// <summary>Random word: a click on the button under "Search", or Ctrl+R.</summary>
+        void Random_Click(object sender, RoutedEventArgs e) { OpenRandom(); }
+
+        public void OpenRandom()
+        {
+            NavSearch.IsChecked = true;
+            Show(search);
+            search.OpenRandom();
+        }
+
         /// <summary>Open one dictionary entry in the search page (used by the word preview pop-up).</summary>
         public void OpenWord(Takoboto.Database.WordTag tag, string queryText)
         {
@@ -107,6 +129,7 @@ namespace TakobotoApp
             {
                 string a = args[i], v = i + 1 < args.Length ? args[i + 1] : null;
                 if (a == "--theme" && v != null) { Theme.Apply(v); i++; }
+                else if (a == "--scheme" && v != null) { i++; Store.Settings.Scheme = v; Theme.Apply(Theme.IsDark ? "dark" : "light"); }
                 else if (a == "--tab" && v != null) { i++; WordView.TestTab = v; }
                 else if (a == "--scroll" && v != null) { i++; double d; if (double.TryParse(v, out d)) WordView.TestScroll = d; }
                 else if (a == "--word-test" && v != null) { i++; WordTest(v); }
@@ -164,6 +187,7 @@ namespace TakobotoApp
                 case Key.D3: NavFavorites.IsChecked = true; Navigate(NavFavorites); e.Handled = true; break;
                 case Key.D4: NavLists.IsChecked = true; Navigate(NavLists); e.Handled = true; break;
                 case Key.D5: NavKanji.IsChecked = true; Navigate(NavKanji); e.Handled = true; break;
+                case Key.R: OpenRandom(); e.Handled = true; break;
             }
         }
     }
