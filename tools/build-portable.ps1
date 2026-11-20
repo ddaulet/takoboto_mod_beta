@@ -34,6 +34,10 @@ foreach ($f in "Takoboto.exe", "Takoboto.exe.config", "Takoboto.Database.dll") {
 $dat = @((Join-Path $Root "data\takoboto.dat"), (Join-Path $Root "extracted\app\Takoboto.Database\takoboto.dat"), (Join-Path $out "data\takoboto.dat")) | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $dat) { throw "The dictionary (takoboto.dat) was not found. Run  tools\get-data.ps1  first (it downloads it from the GitHub release)." }
 Copy-Item $dat (Join-Path $pkg "data\takoboto.dat")
+# pronunciation: the voice folder (VOICEVOX CORE + the Nemo voices, ~200 MB), kept in <Root>\voice-data. Without it the program works, just without speaker buttons.
+$voice = Join-Path $Root "voice-data"
+if (Test-Path (Join-Path $voice "voicevox_core.dll")) { Copy-Item $voice (Join-Path $pkg "voice") -Recurse }
+else { Write-Host "NOTE: no voice-data folder: this package has no pronunciation (run tools\get-data.ps1 to fetch it)." -ForegroundColor Yellow }
 
 $readme = @'
 TAKOBOTO - portable edition
@@ -49,11 +53,14 @@ Files
   Takoboto.exe            the program
   Takoboto.Database.dll   the dictionary engine (original Takoboto)
   data\takoboto.dat       the dictionary (JMdict, KANJIDIC, KanjiVG, Tatoeba)
+  voice\                  pronunciation: VOICEVOX CORE and the VOICEVOX Nemo voices (offline speech synthesis; optional)
 
 Needs Microsoft .NET Framework 4.8, which is already part of Windows 10 (1903 or newer) and Windows 11.
 
-Under the search box: handwriting / radicals / keyboard / voice / photo (handwriting, voice, photo are placeholders). No mode is on at
-first; press a button to open it, press it again to close it. Radicals: pick radicals, click a kanji, press DONE.
+Under the search box: handwriting / radicals / keyboard. No mode is on at first; press a button to open it, press it again to close it.
+Handwriting: draw a kanji or kana, tap a candidate (it goes into the search box), press the green check to see the results.
+Radicals: pick radicals, click a kanji, press the green check.
+The loudspeaker next to a reading and after each example sentence reads it aloud (offline, VOICEVOX Nemo; the female or male voice is chosen in Settings).
 The keyboard mode has hiragana and katakana keys (with small kana); while it is open your keyboard types romaji and kana come out.
 A word opens in tabs: Overview (writing, reading, meanings, phrases) | Forms | Kanji.
 Search works while you type: "nih" already finds the words starting with に-, "食b" finds 食べ...; the list keeps
@@ -81,11 +88,14 @@ TAKOBOTO - портативная версия
   Takoboto.exe            программа
   Takoboto.Database.dll   словарный движок (оригинальный Takoboto)
   data\takoboto.dat       словарь (JMdict, KANJIDIC, KanjiVG, Tatoeba)
+  voice\                  произношение: VOICEVOX CORE и голоса VOICEVOX Nemo (синтез речи без интернета; необязательно)
 
 Нужен Microsoft .NET Framework 4.8 - он уже входит в Windows 10 (1903 и новее) и Windows 11.
 
-Под строкой поиска: рукописный ввод / радикалы / клавиатура / голос / фото (рукописный ввод, голос и фото - заглушки). Сначала ни один режим
-не включён; нажмите кнопку, чтобы открыть, нажмите ещё раз, чтобы закрыть. Радикалы: выберите радикалы, нажмите на кандзи, затем DONE.
+Под строкой поиска: рукописный ввод / радикалы / клавиатура. Сначала ни один режим не включён; нажмите кнопку, чтобы открыть, нажмите ещё раз, чтобы закрыть.
+Рукописный ввод: нарисуйте кандзи или кану, нажмите на кандидата (он попадёт в строку поиска), затем зелёную галочку - появятся результаты.
+Радикалы: выберите радикалы, нажмите на кандзи, затем зелёную галочку.
+Значок динамика у чтения и после каждого примера читает вслух (без интернета, голос VOICEVOX Nemo; женский или мужской - в Settings).
 У режима клавиатуры клавиши хираганы и катаканы (с маленькой каной); пока он открыт, ваша клавиатура печатает ромадзи, а получается кана.
 Слово открывается во вкладках: Overview (написание, чтение, значения, примеры) | Forms (формы) | Kanji (кандзи).
 Поиск работает по мере набора: "nih" сразу находит слова на に-, "食b" находит 食べ...; список подгружается при прокрутке вниз.

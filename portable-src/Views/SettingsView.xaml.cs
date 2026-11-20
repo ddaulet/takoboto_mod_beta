@@ -23,6 +23,15 @@ namespace TakobotoApp
             CheckGerman.IsChecked = s.German;
             CheckRussian.IsChecked = s.Russian;
             CheckFurigana.IsChecked = s.Furigana;
+            VoiceFemale.IsChecked = !s.VoiceMale;
+            VoiceMale.IsChecked = s.VoiceMale;
+            if (Voice.Available)
+                VoiceInfo.Text = "The loudspeaker next to a reading and after each example sentence reads it aloud. Works offline; the voice is VOICEVOX Nemo.";
+            else
+            {
+                VoiceInfo.Text = "The voice files are not found. Put the folder \"voice\" next to Takoboto.exe (it comes with the full download) and restart the program: the loudspeaker buttons then appear.";
+                VoicePanel.Visibility = Visibility.Collapsed;
+            }
             CheckRandomCommon.IsChecked = s.RandomCommon;
             CheckRandomKatakana.IsChecked = s.RandomSkipKatakana;
             DataPath.Text = Store.Dir;
@@ -68,6 +77,21 @@ namespace TakobotoApp
             s.Russian = CheckRussian.IsChecked == true;
             Store.SaveSettings();
             MainWindow.Instance.RefreshSearch();
+        }
+
+        const string Sample = "こんにちは。タコボトへようこそ。";
+
+        void Voice_Checked(object sender, RoutedEventArgs e)
+        {
+            if (loading) return;
+            Store.Settings.VoiceMale = VoiceMale.IsChecked == true;
+            Store.SaveSettings();
+            Voice.Speak(Sample, Store.Settings.VoiceMale, null);   // the new voice says hello
+        }
+
+        void VoiceTest_Click(object sender, RoutedEventArgs e)
+        {
+            Voice.Speak(Sample, Store.Settings.VoiceMale, null);
         }
 
         void Furigana_Click(object sender, RoutedEventArgs e)

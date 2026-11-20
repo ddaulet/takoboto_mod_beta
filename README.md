@@ -17,9 +17,10 @@ It is a new user interface on top of the original Takoboto dictionary engine.
 - Example sentences: every sentence the dictionary has for a word (the card shows how many there are) is shown right in the card (no button), loading as you scroll; all of it is offline, taken from the dictionary file
 - All text in the word card is selectable; click a word of an example phrase (or select any word) to get a small pop-up with its reading and meaning, click the pop-up to open the entry
 - Three input modes under the search box, like Pleco: **handwriting** (pen), **search by radical** (puzzle) and **keyboard**. No mode is on at first (you just type); press a mode button to open it, press it again to close it
-- Search by radical fills the results area: a bar on top (backspace | the picked radicals in one row | DONE), the kanji that contain them below - a click puts the kanji into the search box at once - then the radicals. Backspace deletes the last character of the search box, DONE closes the panel and shows the results
-- Handwriting: write ONE kanji on a square pad with the mouse (or a pen); the candidates appear in the bar on top (one row, scrolls sideways; backspace on the left, DONE on the right), a click on one puts it into the search box; a round button above the pad undoes the last stroke. Works offline: the stroke templates are built from the stroke-order data (KanjiVG) that is in the dictionary file, about 5,000 kanji, the first time it is opened (a few seconds; kept in `userdata\handwriting.bin`). Strokes in the wrong order and a missing stroke are tolerated. Hiragana and katakana too (their strokes are a small text file, `portable-src/Assets/kana-strokes.txt`, from KanjiVG); a candidate goes into the search box selected and the next candidate replaces it until you click into the box; nothing is searched until you press the green check
+- Search by radical fills the results area: a bar on top (the picked radicals in one row | round X | round green check), the kanji that contain them below - a click puts the kanji into the search box at once - then the radicals. X clears the picked radicals, the green check closes the panel and shows the results
+- Handwriting: write ONE kanji on a square pad with the mouse (or a pen); the candidates appear in the bar on top (one row, scrolls sideways, then a round X that clears the pad and a round green check), a click on one puts it into the search box; a round button in the top right corner of the pad undoes the last stroke. Works offline: the stroke templates are built from the stroke-order data (KanjiVG) that is in the dictionary file, about 5,000 kanji, the first time it is opened (a few seconds; kept in `userdata\handwriting.bin`). Strokes in the wrong order and a missing stroke are tolerated. Hiragana and katakana too (their strokes are a small text file, `portable-src/Assets/kana-strokes.txt`, from KanjiVG); a candidate goes into the search box selected and the next candidate replaces it until you click into the box; nothing is searched until you press the green check
 - Keyboard mode: an on-screen kana keyboard (hiragana / katakana, with the small kana ぁ ぃ ぅ ぇ ぉ ゃ ゅ ょ っ ゎ as keys, and ゛ ゜); while it is open your real keyboard types romaji and kana come out (`nihongo` → にほんご) - no Japanese keyboard needs to be installed
+- Pronunciation: a loudspeaker next to the reading and after every Japanese example sentence reads it aloud, **offline** (speech synthesis by [VOICEVOX CORE](https://github.com/VOICEVOX/voicevox_core), voices "VOICEVOX Nemo"; a female and a male voice, chosen in Settings). The voice files are the folder `voice` next to `Takoboto.exe` (about 200 MB); without it the program works and simply has no loudspeaker buttons
 - On the search page every key you press goes into the search box, wherever the focus is
 - The search box and the results are in the left column; the word card takes the whole right side
 - History, favorites and your own lists
@@ -44,7 +45,8 @@ Everything the program needs, except one big file:
 - the original dictionary **engine** `Takoboto.Database.dll` (`portable-src/lib/`), the flags / radical glyph (`portable-src/Assets/`)
   and the mascot artwork - taken unchanged from the original Takoboto, the mascot is only recoloured green;
 - the dictionary itself, `takoboto.dat` (107 MB), is above GitHub's 100 MB file limit, so it is **not in git** but in the
-  release (inside `Takoboto-Portable.zip`); `tools\get-data.ps1` fetches it for you.
+  release (inside `Takoboto-Portable.zip`); `tools\get-data.ps1` fetches it for you. The same goes for the pronunciation files
+  (`voice-data\`, about 190 MB: VOICEVOX CORE, ONNX Runtime, the OpenJTalk dictionary and the Nemo voice model), they are in the same zip.
 
 The dictionary *content* is not the app author's work either: it comes from JMdict / EDICT / KANJIDIC (EDRDG), KanjiVG and
 Tatoeba, which are published under open (Creative Commons) licences and are credited in the Credits below and on the
@@ -87,6 +89,8 @@ Dictionary words and kanji: JMdict, EDICT and KANJIDIC (Electronic Dictionary Re
 Stroke order: KanjiVG (Ulrich Apel). Example sentences: Tatoeba and the Tanaka Corpus. These come with the original
 Takoboto data and are used under their own licences.
 
+Pronunciation: speech synthesis by VOICEVOX CORE (voicevox.hiroshiba.jp), voices "VOICEVOX Nemo" (terms: voicevox.hiroshiba.jp/nemo/term/ - the credit "VOICEVOX Nemo" is required wherever the sound is used), ONNX Runtime built by the VOICEVOX project, OpenJTalk dictionary (NAIST Japanese Dictionary, BSD licence).
+
 ---
 
 ## По-русски
@@ -99,7 +103,7 @@ Takoboto data and are used under their own licences.
 (переключается сразу), настройки хранятся в папке `userdata` рядом с программой. Поиск работает по мере набора
 (`nih` сразу показывает слова на に…, `食b` находит 食べ…), список подгружается при прокрутке. Текст в карточке можно
 выделять; клик по слову в примере (или выделение слова) показывает маленькую подсказку с чтением и значением,
-клик по подсказке открывает статью.
+клик по подсказке открывает статью. Значок динамика у чтения и после каждого японского примера читает вслух без интернета (синтез речи VOICEVOX CORE, голоса VOICEVOX Nemo, женский и мужской - в Settings); файлы голоса - папка `voice` рядом с программой (около 200 МБ), без неё программа работает, только без кнопок-динамиков.
 
 **Просто пользоваться:** скачайте `Takoboto-Portable.zip` из [последнего релиза](https://github.com/ddaulet/takoboto_mod_beta/releases/latest),
 распакуйте куда угодно и запустите `Takoboto.exe`. Больше ничего не нужно.
@@ -107,6 +111,6 @@ Takoboto data and are used under their own licences.
 **Что в репозитории:** всё необходимое, кроме одного большого файла: исходники программы, оригинальный словарный
 движок (`portable-src/lib`), флаги и рисунки (`portable-src/Assets`). Сам словарь `takoboto.dat` (107 МБ) больше лимита
 GitHub в 100 МБ на файл, поэтому лежит не в git, а в релизе (внутри `Takoboto-Portable.zip`); `tools\get-data.ps1`
-скачивает его сам. Содержимое словаря - не работа автора приложения: это JMdict / EDICT / KANJIDIC (EDRDG), KanjiVG и
+скачивает его сам (и файлы произношения `voice-data\`, около 190 МБ, - они в том же архиве). Содержимое словаря - не работа автора приложения: это JMdict / EDICT / KANJIDIC (EDRDG), KanjiVG и
 Tatoeba под открытыми лицензиями Creative Commons; они указаны в разделе Credits и на странице About программы.
 Движок, собранный файл `takoboto.dat` и маскот взяты из оригинального Takoboto. Сборка из исходников: команды выше.

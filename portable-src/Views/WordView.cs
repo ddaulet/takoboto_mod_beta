@@ -114,6 +114,7 @@ namespace TakobotoApp
                 root.Children.Add(Ui.SText("This word could not be loaded.", 16, "FgMuted"));
                 return;
             }
+            Voice.Warm();   // the voice takes some seconds to load: start now, so that the first click does not wait (nothing happens without the voice folder)
             Build(w, tag);
             scroll.ScrollToTop();
             if (TestScroll > 0) { var off = TestScroll; Dispatcher.BeginInvoke(new Action(() => scroll.ScrollToVerticalOffset(off)), System.Windows.Threading.DispatcherPriority.Background); }
@@ -290,7 +291,21 @@ namespace TakobotoApp
         {
             var stack = new StackPanel();
             stack.Children.Add(Ui.Title("Reading"));
-            foreach (var p in w.Readings) stack.Children.Add(PartBlock(p, 28));
+            foreach (var p in w.Readings)
+            {
+                // the loudspeaker stands right after the reading: over the text block, at the place where the kana end
+                // (the block is a RichTextBox, it cannot be put in a row by its content width)
+                var line = new Grid();
+                line.Children.Add(PartBlock(p, 28));
+                var ft = new FormattedText(p.Text ?? "", System.Globalization.CultureInfo.CurrentUICulture, FlowDirection.LeftToRight,
+                    new Typeface(Ui.JpFont, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), 28, Brushes.Black, null, TextFormattingMode.Display, 1.0);
+                var say = Ui.SpeakButton(() => p.Text, 30);
+                say.HorizontalAlignment = HorizontalAlignment.Left;
+                say.VerticalAlignment = VerticalAlignment.Top;
+                say.Margin = new Thickness(ft.Width + 12, 3, 0, 0);
+                line.Children.Add(say);
+                stack.Children.Add(line);
+            }
             return CardWithCopy(stack, () => BlockText(w.Readings), "Copy reading");
         }
 
@@ -682,7 +697,17 @@ namespace TakobotoApp
 
             var jp = SentenceText(s);
             bool hasRuby = jp is Grid;   // a sentence with furigana: its lines carry their own room above, so less padding on top
-            var left = new Border { BorderThickness = new Thickness(0, 0, 1, 0), Padding = new Thickness(0, hasRuby ? 0 : 6, 12, 6), Child = jp };
+            // the loudspeaker stands after the sentence (top right of the Japanese column)
+            var jpRow = new Grid();
+            jpRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            jpRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            jpRow.Children.Add(jp);
+            var say = Ui.SpeakButton(() => s.MainText, 26);
+            say.VerticalAlignment = VerticalAlignment.Top;
+            say.Margin = new Thickness(4, hasRuby ? 6 : 3, 0, 0);
+            Grid.SetColumn(say, 1);
+            jpRow.Children.Add(say);
+            var left = new Border { BorderThickness = new Thickness(0, 0, 1, 0), Padding = new Thickness(0, hasRuby ? 0 : 6, 12, 6), Child = jpRow };
             left.SetResourceReference(Border.BorderBrushProperty, "Line");
 
             var right = new StackPanel { Margin = new Thickness(12, 6, 0, 6) };

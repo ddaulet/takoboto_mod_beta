@@ -80,6 +80,29 @@ namespace TakobotoApp
             return Text(s, 15, "Accent", FontWeights.SemiBold, new Thickness(0, 0, 0, 5));
         }
 
+        /// <summary>The loudspeaker button: speaks the text with the voice chosen in the settings. A click while it speaks stops it. Without the voice
+        /// files (see <see cref="Voice"/>) the button does not show at all.</summary>
+        public static Button SpeakButton(Func<string> text, double size = 28)
+        {
+            var b = new Button
+            {
+                Style = (Style)Application.Current.FindResource("IconButton"), Width = size, Height = size, ToolTip = "Listen",
+                Content = Icons.Make(Icons.Speaker, 18, null), Visibility = Voice.Available ? Visibility.Visible : Visibility.Collapsed,
+            };
+            System.Windows.Automation.AutomationProperties.SetName(b, "Listen");
+            bool speaking = false;
+            b.Click += (s, e) =>
+            {
+                if (speaking) { Voice.Stop(); return; }
+                Voice.Speak(text(), Store.Settings.VoiceMale, on =>
+                {
+                    speaking = on;
+                    if (on) b.SetResourceReference(System.Windows.Controls.Control.ForegroundProperty, "Accent"); else b.ClearValue(System.Windows.Controls.Control.ForegroundProperty);
+                });
+            };
+            return b;
+        }
+
         public static Border Card(UIElement content, Thickness? margin = null)
         {
             var b = new Border
