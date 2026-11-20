@@ -102,6 +102,9 @@ namespace TakobotoApp
 
         public void RefreshSearch() { search.Refresh(); }
 
+        /// <summary>Build the card of the open word again (e.g. after the furigana setting changed).</summary>
+        public void RefreshCard() { search.RefreshCard(); }
+
         /// <summary>Random word: a click on the button under "Search", or Ctrl+R.</summary>
         void Random_Click(object sender, RoutedEventArgs e) { OpenRandom(); }
 

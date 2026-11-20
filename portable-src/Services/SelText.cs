@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -99,6 +100,25 @@ namespace TakobotoApp
         }
 
         public InlineCollection Inlines { get { return para.Inlines; } }
+
+        // ---- furigana ---------------------------------------------------------------------------------------------
+        /// <summary>The kanji of this text that get a reading above them (see <see cref="RubyLayer"/>).</summary>
+        public readonly List<RubyItem> Ruby = new List<RubyItem>();
+
+        /// <summary>Distance from the top of a character's cell (what GetCharacterRect returns) to the top of a kanji's ink.</summary>
+        public double InkTop { get; private set; }
+
+        /// <summary>Makes every line <paramref name="extra"/> pixels taller; the extra room is ABOVE the text (that is where the
+        /// furigana go). Also works out where the ink of a kanji starts inside its character cell.</summary>
+        public void MakeRoomForFurigana(double extra)
+        {
+            var ft = new FormattedText("漢", System.Globalization.CultureInfo.CurrentUICulture, FlowDirection.LeftToRight,
+                new Typeface(FontFamily, FontStyle, FontWeight, FontStretch), FontSize, Brushes.Black, 1.0);
+            para.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
+            para.LineHeight = ft.Height + extra;
+            // a kanji's ink reaches about 0.86 em above the baseline; the cell starts at the top of the font's ascent
+            InkTop = Math.Max(0, ft.Baseline - FontSize * 0.86);
+        }
 
         public string Text
         {

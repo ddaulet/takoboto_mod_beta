@@ -266,6 +266,8 @@ namespace TakobotoApp
             OpenWord(tag, text);
         }
 
+        public void RefreshCard() { var tag = Detail.Current; if (tag != null) Detail.Show(tag); }
+
         /// <summary>Re-runs the current search (e.g. after the language options changed).</summary>
         public void Refresh() { if (Box.Text.Trim().Length > 0) RunSearch(); }
 

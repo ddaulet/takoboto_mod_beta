@@ -22,6 +22,7 @@ namespace TakobotoApp
             CheckFrench.IsChecked = s.French;
             CheckGerman.IsChecked = s.German;
             CheckRussian.IsChecked = s.Russian;
+            CheckFurigana.IsChecked = s.Furigana;
             CheckRandomCommon.IsChecked = s.RandomCommon;
             CheckRandomKatakana.IsChecked = s.RandomSkipKatakana;
             DataPath.Text = Store.Dir;
@@ -67,6 +68,14 @@ namespace TakobotoApp
             s.Russian = CheckRussian.IsChecked == true;
             Store.SaveSettings();
             MainWindow.Instance.RefreshSearch();
+        }
+
+        void Furigana_Click(object sender, RoutedEventArgs e)
+        {
+            if (loading) return;
+            Store.Settings.Furigana = CheckFurigana.IsChecked == true;
+            Store.SaveSettings();
+            MainWindow.Instance.RefreshCard();   // the open word card is built again with / without furigana
         }
 
         void Random_Click(object sender, RoutedEventArgs e)

@@ -589,39 +589,49 @@ namespace TakobotoApp
             return outer;
         }
 
-        // The engine tells which dictionary words a sentence contains (dictionary form + reading) but not where they
-        // stand in the text. So each word is looked for in the text: first the whole written form, then (for conjugated
-        // words such as 食べる -> 食べて) its stem, which must contain a kanji so that single kana never match by chance.
-        // Found words become links: click -> preview pop-up.
+        // The words of a sentence are found by SentenceRuby (the engine does not say where they stand in the text) and become
+        // links: click -> preview pop-up. With furigana on, the kanji of those words get their reading above them.
+        static readonly Dictionary<char, string> onReadingCache = new Dictionary<char, string>();
+
+        static string OnReadingOf(char c)
+        {
+            string r;
+            if (onReadingCache.TryGetValue(c, out r)) return r;
+            try { var k = Engine.Kanji(c); r = k != null ? (k.OnReading ?? "") : ""; } catch { r = ""; }
+            onReadingCache[c] = r;
+            return r;
+        }
+
         UIElement SentenceText(Sentence s)
         {
             var box = new SelText { FontSize = 20, FontFamily = Ui.JpFont };
             string text = s.MainText ?? "";
+            bool furigana = Store.Settings.Furigana;
             int cursor = 0;
-            foreach (var part in s.Parts ?? new List<SentencePart>())
+            foreach (var m in SentenceRuby.Analyze(text, s.Parts, OnReadingOf))
             {
-                int at = -1, len = 0;
-                string w = part.Writing ?? "";
-                for (int l = w.Length; l >= 1 && at < 0; l--)
-                {
-                    string stem = w.Substring(0, l);
-                    if (l < w.Length && !Ui.HasKanji(stem)) break;       // kana-only stems are too ambiguous
-                    int i = text.IndexOf(stem, cursor, StringComparison.Ordinal);
-                    if (i >= 0) { at = i; len = l; }
-                }
-                if (at < 0 && !string.IsNullOrEmpty(part.Reading))        // written in kana in this sentence
-                {
-                    int i = text.IndexOf(part.Reading, cursor, StringComparison.Ordinal);
-                    if (i >= 0) { at = i; len = part.Reading.Length; }
-                }
-                if (at < 0) continue;
-                if (at > cursor) box.Inlines.Add(new Run(text.Substring(cursor, at - cursor)));
-                box.Inlines.Add(WordLink(text.Substring(at, len), part));
-                cursor = at + len;
+                if (m.Start > cursor) box.Inlines.Add(new Run(text.Substring(cursor, m.Start - cursor)));
+                var run = (Run)WordLink(text.Substring(m.Start, m.Length), m.Part);
+                box.Inlines.Add(run);
+                if (furigana)
+                    foreach (var piece in m.Ruby)
+                        box.Ruby.Add(new RubyItem { Run = run, Offset = piece.Offset - m.Start, Length = piece.Length, Reading = piece.Reading });
+                cursor = m.Start + m.Length;
             }
             if (cursor < text.Length) box.Inlines.Add(new Run(text.Substring(cursor)));
-            return box;
+            if (box.Ruby.Count == 0) return box;
+
+            // the readings are painted over the text; the lines get a little more room above them
+            box.MakeRoomForFurigana(FuriganaRoom);
+            var host = new Grid();
+            host.Children.Add(box);
+            host.Children.Add(new RubyLayer(box));
+            return host;
         }
+
+        // How much taller a line gets for the furigana. The sentence cell has 6 px of padding above its first line that used to be
+        // empty, so the first line costs nothing more than this room minus that padding (see SentenceBlock).
+        const double FuriganaRoom = 8;
 
         // A word of the sentence: dotted underline, turns green under the mouse. It is a plain Run (not a Hyperlink: a
         // Hyperlink swallows the mouse-down, so a text selection could never START on a word). SelText sees the click
@@ -648,7 +658,9 @@ namespace TakobotoApp
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            var left = new Border { BorderThickness = new Thickness(0, 0, 1, 0), Padding = new Thickness(0, 6, 12, 6), Child = SentenceText(s) };
+            var jp = SentenceText(s);
+            bool hasRuby = jp is Grid;   // a sentence with furigana: its lines carry their own room above, so less padding on top
+            var left = new Border { BorderThickness = new Thickness(0, 0, 1, 0), Padding = new Thickness(0, hasRuby ? 0 : 6, 12, 6), Child = jp };
             left.SetResourceReference(Border.BorderBrushProperty, "Line");
 
             var right = new StackPanel { Margin = new Thickness(12, 6, 0, 6) };
