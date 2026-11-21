@@ -705,7 +705,7 @@ namespace TakobotoApp
             return r;
         }
 
-        UIElement SentenceText(Sentence s)
+        internal static UIElement SentenceText(Sentence s)
         {
             var box = new SelText { FontSize = 20, FontFamily = Ui.JpFont };
             string text = s.MainText ?? "";
@@ -754,7 +754,7 @@ namespace TakobotoApp
             return run;
         }
 
-        UIElement SentenceBlock(Sentence s)
+        internal static UIElement SentenceBlock(Sentence s)
         {
             // like a bilingual book: the Japanese text on the left, its translations on the right, a line down the middle
             var grid = new Grid();
