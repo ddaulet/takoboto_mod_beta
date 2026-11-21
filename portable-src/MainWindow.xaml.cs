@@ -13,6 +13,7 @@ namespace TakobotoApp
 
         readonly SearchView search = new SearchView();
         readonly ListsView lists = new ListsView();
+        readonly GrammarView grammar = new GrammarView();
         readonly SettingsView settings = new SettingsView();
         readonly AboutView about = new AboutView();
         UIElement[] pages;
@@ -24,7 +25,8 @@ namespace TakobotoApp
             Theme.Changed += UpdateBranding;   // the logo and the window icon follow the colour scheme
             UpdateBranding();
 
-            pages = new UIElement[] { search, lists, settings, about };
+            pages = new UIElement[] { search, lists, grammar, settings, about };
+            NavGrammar.Visibility = Grammar.Available ? Visibility.Visible : Visibility.Collapsed;   // only when the local grammar data file is there
             foreach (var p in pages) { p.Visibility = Visibility.Collapsed; Host.Children.Add(p); }
 
             var s = Store.Settings;
@@ -87,11 +89,20 @@ namespace TakobotoApp
             if (rb == lastNav && now - lastNavTick < 250) return;
             lastNav = rb; lastNavTick = now;
             if (rb == NavSearch) { Show(search); search.FocusBox(); }
+            else if (rb == NavGrammar) { Show(grammar); }
             else if (rb == NavHistory) { lists.ShowHistory(); Show(lists); }
             else if (rb == NavFavorites) { lists.ShowFavorites(); Show(lists); }
             else if (rb == NavLists) { lists.ShowOverview(); Show(lists); }
             else if (rb == NavSettings) { Show(settings); }
             else if (rb == NavAbout) { Show(about); }
+        }
+
+        /// <summary>Open the card of a grammar construction (from a word card).</summary>
+        public void OpenGrammar(int id)
+        {
+            NavGrammar.IsChecked = true;
+            Show(grammar);
+            grammar.OpenEntry(id);
         }
 
         /// <summary>Used by other pages: jump to the search page with some text.</summary>
@@ -153,7 +164,7 @@ namespace TakobotoApp
                 {
                     i++;
                     var map = new System.Collections.Generic.Dictionary<string, RadioButton>
-                    { { "search", NavSearch }, { "history", NavHistory }, { "favorites", NavFavorites }, { "lists", NavLists }, { "settings", NavSettings }, { "about", NavAbout } };
+                    { { "search", NavSearch }, { "grammar", NavGrammar }, { "history", NavHistory }, { "favorites", NavFavorites }, { "lists", NavLists }, { "settings", NavSettings }, { "about", NavAbout } };
                     RadioButton rb;
                     if (map.TryGetValue(v, out rb)) { rb.IsChecked = true; Navigate(rb); }
                 }
@@ -255,6 +266,7 @@ namespace TakobotoApp
                 case Key.D3: NavFavorites.IsChecked = true; Navigate(NavFavorites); e.Handled = true; break;
                 case Key.D4: NavLists.IsChecked = true; Navigate(NavLists); e.Handled = true; break;
                 case Key.D5: NavSearch.IsChecked = true; Show(search); search.ShowRadicals(); e.Handled = true; break;   // search by radical
+                case Key.D6: if (Grammar.Available) { NavGrammar.IsChecked = true; Navigate(NavGrammar); e.Handled = true; } break;
                 case Key.R: OpenRandom(); e.Handled = true; break;
             }
         }

@@ -24,6 +24,7 @@ It is a new user interface on top of the original Takoboto dictionary engine.
 - On the search page every key you press goes into the search box, wherever the focus is
 - The search box and the results are in the left column; the word card takes the whole right side
 - Back / forward arrows at the left of the tab strip of the word card (also Alt+Left / Alt+Right and the side buttons of the mouse): a click on a word in a sentence, on the random word or on a result opens another card, and one click brings the previous card back - with the search and the list it came from
+- Grammar page (Ctrl+6): a list of grammar constructions with meanings, connection patterns, explanations and example sentences, and a Grammar block on the word card that links to it. The data comes from a local file, the folder `grammar` next to `Takoboto.exe`, which you make yourself; it is not part of this repository or of the download, and without it the page is simply not shown
 - History, favorites and your own lists
 - Translation languages (Settings): tick English / French / German / Russian; where a word, meaning or phrase has nothing in the ticked languages, the languages it does have are shown instead (never an empty meaning); one flag per language (in the meanings: once for the whole word), not one per line
 - "Random word" button under Search (Ctrl+R): a random entry of the whole dictionary, a new one on every press

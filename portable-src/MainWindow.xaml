@@ -30,6 +30,7 @@
         <StackPanel>
           <RadioButton x:Name="NavSearch" Style="{StaticResource NavItem}" Tag="&#xE721;" Content="Search" GroupName="nav" IsChecked="True" Checked="Nav_Changed" Click="Nav_Changed"/>
           <Button x:Name="NavRandom" Style="{StaticResource NavAction}" Tag="&#xE8B1;" Content="Random word" ToolTip="A random word from the whole dictionary (Ctrl+R)" Click="Random_Click"/>
+          <RadioButton x:Name="NavGrammar" Style="{StaticResource NavItem}" Tag="&#xE82D;" Content="Grammar" GroupName="nav" Visibility="Collapsed" Checked="Nav_Changed" Click="Nav_Changed"/>
           <RadioButton x:Name="NavHistory" Style="{StaticResource NavItem}" Tag="&#xE81C;" Content="History" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>
           <RadioButton x:Name="NavFavorites" Style="{StaticResource NavItem}" Tag="&#xE734;" Content="Favorites" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>
           <RadioButton x:Name="NavLists" Style="{StaticResource NavItem}" Tag="&#xE14C;" Content="My lists" GroupName="nav" Checked="Nav_Changed" Click="Nav_Changed"/>

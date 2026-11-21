@@ -216,10 +216,35 @@ namespace TakobotoApp
         {
             var panel = new StackPanel();
             panel.Children.Add(BuildHeader(w));
+            var gr = BuildGrammarLink(w);
+            if (gr != null) panel.Children.Add(gr);
             if (w.HasReadings && w.Readings != null && w.Readings.Count > 0) panel.Children.Add(BuildReadings(w));
             if (w.Meanings != null && w.Meanings.Count > 0) panel.Children.Add(BuildMeanings(w));
             panel.Children.Add(BuildPhrases(w));
             return panel;
+        }
+
+        // ---- grammar: this word is also a construction of the (local) grammar data ---------------------------------------------------
+        UIElement BuildGrammarLink(Word w)
+        {
+            if (!Grammar.Available || !Grammar.Loaded) { Grammar.EnsureLoaded(); return null; }
+            var writings = new List<string>();
+            if (w.MainEntries != null) writings.AddRange(w.MainEntries.Select(p => p.Text));
+            if (w.Readings != null) writings.AddRange(w.Readings.Select(p => p.Text));
+            var found = Grammar.FindByWord(writings);
+            if (found.Count == 0) return null;
+            var stack = new StackPanel();
+            stack.Children.Add(Ui.Title("Grammar"));
+            var row = new WrapPanel();
+            foreach (var g in found)
+            {
+                var entry = g;
+                var b = new Button { Style = (Style)FindResource("PillButton"), Content = "Open: " + entry.Title, Margin = new Thickness(0, 0, 8, 4), FontFamily = Ui.JpFont };
+                b.Click += (s, e) => MainWindow.Instance.OpenGrammar(entry.Id);
+                row.Children.Add(b);
+            }
+            stack.Children.Add(row);
+            return Ui.Card(stack);
         }
 
         // ---- writing ----------------------------------------------------------------------------------------------
