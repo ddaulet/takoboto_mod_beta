@@ -35,6 +35,7 @@ namespace TakobotoApp
         public string Heading = "";
         public List<string> Patterns = new List<string>();
         public List<GSection> Sections = new List<GSection>();
+        public List<string> Extra = new List<string>();     // English translations of the entry that could not be tied to a single example
         [XmlIgnore] public string Key = "";        // the headword without the variant number and the dots, for matching
         [XmlIgnore] public string SearchText = ""; // everything that can be searched, lower case
         public override string ToString() { return Title; }

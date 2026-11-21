@@ -159,6 +159,13 @@ namespace TakobotoApp
                 }
                 card.Children.Add(Ui.Card(st));
             }
+            if (e.Extra.Count > 0)
+            {
+                var st = new StackPanel();
+                st.Children.Add(Ui.SText("English translations of the examples (from the English edition; the order may differ from the examples above)", 13, "FgFaint", null, new Thickness(0, 0, 0, 6)));
+                foreach (var t in e.Extra) st.Children.Add(Ui.SText("- " + t, 14.5, "FgMuted", null, new Thickness(0, 0, 0, 3)));
+                card.Children.Add(Ui.Card(st));
+            }
             scroll.ScrollToTop();
         }
     }
