@@ -1,0 +1,26 @@
+# Only our OWN work goes to GitHub. Everything at the top level is ignored unless it is allowed below.
+/*
+# (work\ = the material for making the program, Takoboto-Portable\ = the finished program: both stay out of git because of the /* rule)
+!/.gitignore
+!/README.md
+!/portable-src/
+!/tools/
+
+# --- tools: only the scripts that belong to the portable program ---
+/tools/*
+!/tools/build-portable.ps1
+!/tools/make_icons.ps1
+!/tools/make_ico.ps1
+!/tools/recolor.ps1
+!/tools/shot.ps1
+!/tools/runshot.ps1
+!/tools/drive.ps1
+!/tools/assets/
+
+# --- portable-src: no build output (the engine in lib\, the flags/logos in Assets\ and the icon ARE included) ---
+/portable-src/bin/
+/portable-src/obj/
+
+# takoboto.dat (the dictionary, 107 MB) is above GitHub's 100 MB file limit: it is a Release download (tools\get-data.ps1).
+# Keep it out of git (the top-level /* rule already does; this is a second safety net).
+*.dat

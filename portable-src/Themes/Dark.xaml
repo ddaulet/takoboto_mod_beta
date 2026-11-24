@@ -1,0 +1,25 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Dark theme: neutral dark with a faint green tint, soft green accent -->
+  <SolidColorBrush x:Key="PageBg" Color="#111412"/>
+  <SolidColorBrush x:Key="SurfaceBg" Color="#1A1E1B"/>
+  <SolidColorBrush x:Key="SurfaceAlt" Color="#262B27"/>
+  <SolidColorBrush x:Key="InputBg" Color="#212622"/>
+  <SolidColorBrush x:Key="Line" Color="#2F3530"/>
+  <SolidColorBrush x:Key="Fg" Color="#E6ECE7"/>
+  <SolidColorBrush x:Key="FgMuted" Color="#98A39B"/>
+  <SolidColorBrush x:Key="FgFaint" Color="#6A756D"/>
+  <SolidColorBrush x:Key="Accent" Color="#6CC08C"/>
+  <SolidColorBrush x:Key="AccentFill" Color="#2E7D52"/>
+  <SolidColorBrush x:Key="AccentFg" Color="#FFFFFF"/>
+  <SolidColorBrush x:Key="Link" Color="#7FB0E0"/>
+  <SolidColorBrush x:Key="SidebarBg" Color="#111412"/>
+  <SolidColorBrush x:Key="SidebarFg" Color="#E6ECE7"/>
+  <SolidColorBrush x:Key="SidebarFgMuted" Color="#98A39B"/>
+  <SolidColorBrush x:Key="SidebarHover" Color="#222823"/>
+  <SolidColorBrush x:Key="SidebarSelected" Color="#1F3326"/>
+  <SolidColorBrush x:Key="HoverBg" Color="#222823"/>
+  <SolidColorBrush x:Key="SelectedBg" Color="#1F3326"/>
+  <SolidColorBrush x:Key="ScrollThumb" Color="#3F4A42"/>
+  <SolidColorBrush x:Key="ScrollThumbHover" Color="#5C6A60"/>
+</ResourceDictionary>

@@ -1,0 +1,91 @@
+<UserControl x:Class="TakobotoApp.SearchView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:TakobotoApp">
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="440" MinWidth="340"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="*" MinWidth="360"/>
+    </Grid.ColumnDefinitions>
+
+    <!-- left column: search box, the five input modes, the panel of the active mode, the results -->
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+
+      <!-- search box -->
+      <Grid Margin="16,16,16,8">
+        <TextBox x:Name="Box" AutomationProperties.Name="Search words" Height="48" Padding="46,0,78,0" FontFamily="Segoe UI, Yu Gothic UI, Meiryo UI"
+                 ToolTip="Japanese (kanji, kana, romaji) or English, French, German, Russian"
+                 TextChanged="Box_TextChanged" PreviewKeyDown="Box_KeyDown" PreviewTextInput="Box_PreviewTextInput"/>
+        <TextBlock Text="&#xE721;" FontFamily="{StaticResource IconFont}" FontSize="17" Foreground="{DynamicResource FgMuted}" VerticalAlignment="Center" Margin="16,0,0,0" IsHitTestVisible="False"/>
+        <TextBlock x:Name="Placeholder" Text="Search Japanese or English…" FontSize="16" Foreground="{DynamicResource FgFaint}" VerticalAlignment="Center" Margin="56,0,40,0" IsHitTestVisible="False" TextTrimming="CharacterEllipsis"/>
+        <Button x:Name="RandomBtn" Style="{StaticResource IconButton}" Content="&#xE8B1;" HorizontalAlignment="Right" Margin="0,0,7,0" ToolTip="A random word (Ctrl+R)" AutomationProperties.Name="Random word" Click="RandomBtn_Click"/>
+        <Button x:Name="ClearBtn" Style="{StaticResource IconButton}" Content="&#xE711;" HorizontalAlignment="Right" Margin="0,0,41,0" Visibility="Collapsed" Click="Clear_Click" ToolTip="Clear (Esc)" AutomationProperties.Name="Clear search" FontSize="12"/>
+      </Grid>
+
+      <!-- the three input modes: handwriting, radicals, keyboard -->
+      <Border Grid.Row="1" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1">
+        <UniformGrid Columns="3" Margin="10,0">
+          <RadioButton x:Name="ModeBrush" Style="{StaticResource ModeTab}" Tag="{x:Static local:Icons.Pen}" GroupName="searchmode" ToolTip="Handwriting - write a kanji (click again to close)" AutomationProperties.Name="Handwriting" Checked="Mode_Changed" Unchecked="Mode_Changed" Click="Mode_Click"/>
+          <RadioButton x:Name="ModeRadicals" Style="{StaticResource ModeTab}" Tag="{x:Static local:Icons.Puzzle}" GroupName="searchmode" ToolTip="Search by radical (Ctrl+5) - click again to close" AutomationProperties.Name="Search by radical" Checked="Mode_Changed" Unchecked="Mode_Changed" Click="Mode_Click"/>
+          <RadioButton x:Name="ModeKeyboard" Style="{StaticResource ModeTab}" Tag="{x:Static local:Icons.Keyboard}" GroupName="searchmode" ToolTip="Japanese keyboard: kana keys, and your own keyboard types romaji → kana - click again to close" AutomationProperties.Name="Keyboard" Checked="Mode_Changed" Unchecked="Mode_Changed" Click="Mode_Click"/>
+        </UniformGrid>
+      </Border>
+
+      <!-- the panel of the keyboard mode (kana keys) -->
+      <Border x:Name="PanelBorder" Grid.Row="2" Visibility="Collapsed" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="14,10,14,8">
+        <ContentControl x:Name="PanelHost" Focusable="False"/>
+      </Border>
+
+      <!-- results -->
+      <Grid Grid.Row="3">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="*"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>     <!-- the kana table of the index (only while the index is shown) -->
+        </Grid.ColumnDefinitions>
+        <ListBox x:Name="List" Style="{StaticResource PlainList}" ItemTemplate="{StaticResource WordItemTemplate}" SelectionChanged="List_SelectionChanged" PreviewKeyDown="List_KeyDown"/>
+        <!-- all the hiragana in ONE line, small; it shrinks by itself when the window is not tall enough -->
+        <Viewbox x:Name="AlphaBar" Grid.Column="1" Stretch="Uniform" StretchDirection="DownOnly" VerticalAlignment="Top" Margin="0,4,4,4" Visibility="Collapsed">
+          <StackPanel x:Name="AlphaStack" Background="{DynamicResource PageBg}"/>
+        </Viewbox>
+
+        <!-- welcome -->
+        <StackPanel x:Name="Hint" Margin="22,16,20,0" VerticalAlignment="Top">
+          <TextBlock Text="Type a word to start." FontSize="18" Foreground="{DynamicResource Fg}" Margin="0,0,0,6"/>
+          <TextBlock TextWrapping="Wrap" FontSize="14.5" Foreground="{DynamicResource FgMuted}" Margin="0,0,0,14"
+                     Text="Japanese in kanji, kana or romaji, or a word in English, French, German or Russian. Conjugated Japanese verbs and adjectives are recognised too."/>
+          <TextBlock Text="Try some common words:" FontSize="13.5" Foreground="{DynamicResource FgFaint}" Margin="0,0,0,2"/>
+          <WrapPanel x:Name="Examples"/>
+        </StackPanel>
+
+        <TextBlock x:Name="NothingFound" Text="Nothing found." Visibility="Collapsed" FontSize="16" Foreground="{DynamicResource FgMuted}" Margin="22,16,20,0" VerticalAlignment="Top"/>
+
+        <!-- radical search: covers the whole results area while that mode is on -->
+        <Border x:Name="RadicalHost" Grid.RowSpan="2" Grid.ColumnSpan="2" Visibility="Collapsed" Background="{DynamicResource PageBg}"/>
+        <Border x:Name="HandwritingHost" Grid.RowSpan="2" Grid.ColumnSpan="2" Visibility="Collapsed" Background="{DynamicResource PageBg}"/>
+
+        <!-- how many results; more are loaded automatically while you scroll -->
+        <Border x:Name="StatusBar" Grid.Row="1" Grid.ColumnSpan="2" Visibility="Collapsed" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="16,6">
+          <TextBlock x:Name="StatusText" FontSize="12.5" Foreground="{DynamicResource FgMuted}"/>
+        </Border>
+      </Grid>
+    </Grid>
+
+    <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" ResizeBehavior="PreviousAndNext" Cursor="SizeWE"/>
+
+    <!-- the word card takes the whole right side, from the top to the bottom -->
+    <Border Grid.Column="2" BorderBrush="{DynamicResource Line}" BorderThickness="1,0,0,0">
+      <local:WordView x:Name="Detail"/>
+    </Border>
+  </Grid>
+</UserControl>

@@ -1,0 +1,588 @@
+using System.Collections.Generic;
+using System;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Threading;
+
+namespace TakobotoApp
+{
+    public partial class SearchView : UserControl
+    {
+        const int FirstLimit = 100;    // partial matches asked from the engine at first (fast)
+        const int MaxLimit = 5000;     // ... and at most, while the user keeps scrolling
+
+        readonly ObservableCollection<WordItem> items = new ObservableCollection<WordItem>();
+        readonly DispatcherTimer debounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(140) };
+        int generation;
+        bool auto;               // true while the code (not the user) selects a row
+        int limit = FirstLimit;
+        string currentQuery = "";
+        bool truncated, loadingMore;
+        // back / forward: every card that was shown is a place (the query of the list + the word); a place made by typing is replaced
+        // by the next letter, a place made by a click (list, word in a sentence, random word) stays
+        class NavEntry { public string Query; public WordTag Tag; public bool Auto; }
+        readonly List<NavEntry> nav = new List<NavEntry>();
+        int navPos;              // the place that is shown; nav.Count = the empty page
+        bool restoring;          // a back / forward is bringing a place back: it is not a new place
+        int pendingSelectId;     // select this word once the next search has filled the list (see OpenWord)
+
+        // ---- the five input modes under the search box ------------------------------------------------------------
+        // No mode is on at first: the search box is typed into with the keyboard as it is. A click on a mode button switches
+        // it on (its panel appears), a click on the same button again switches it off.
+        enum Mode { None, Keyboard, Radicals, Handwriting }
+        InputKeyboard keyboard;
+        RadicalPicker picker;
+        HandwritingPanel writing;
+        Mode mode = Mode.None;
+        int lastModeTick;
+
+        public SearchView()
+        {
+            InitializeComponent();
+            keyboard = new InputKeyboard { Layout = Store.Settings.InputLayout };
+            keyboard.TextTyped += t => InsertRaw(t);
+            keyboard.BackspaceTyped += () => BackspaceKey();
+            keyboard.Modify += kind => ModifyLast(kind);
+            keyboard.LayoutChanged += () => { Store.Settings.InputLayout = keyboard.Layout; Store.SaveSettings(); };
+            PanelHost.Content = keyboard;
+            Detail.NavBack += GoBack;
+            Detail.NavForward += GoForward;
+            Detail.SetNav(false, false);
+            picker = new RadicalPicker();
+            picker.KanjiChosen += k => InsertCandidate(k);   // a click on a kanji puts it into the search box (selected)
+            picker.DoneRequested += () => CloseModes();
+            RadicalHost.Child = picker;
+            writing = new HandwritingPanel();
+            writing.KanjiChosen += k => InsertCandidate(k);   // a click on a candidate puts it into the search box (selected)
+            writing.DoneRequested += () => CloseModes();
+            HandwritingHost.Child = writing;
+            Box.IsInactiveSelectionHighlightEnabled = true;   // the chosen candidate stays visibly selected while the focus is on the pad
+            Box.PreviewMouseDown += (s, e) => candLength = 0;   // a click into the box ends the replacing: the next candidate is added after
+            List.ItemsSource = items;
+            List.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(List_ScrollChanged));
+            debounce.Tick += (s, e) => { debounce.Stop(); RunSearch(); };
+            BuildAlphaBar();
+            Loaded += (s2, e2) => { if (Box.Text.Trim().Length == 0) ShowIndex(); };
+        }
+
+        // ---- the suggestions on the empty page: 6 random common words, different every time ---------------------
+        int examplesGeneration;
+
+        async void RefreshExamples()
+        {
+            int my = ++examplesGeneration;
+            List<WordTag> tags = null;
+            bool skipKatakana = Store.Settings.RandomSkipKatakana;
+            try { tags = await Task.Run(() => Engine.RandomWords(6, true, skipKatakana)); }
+            catch (Exception ex) { App.Log(ex); }
+            if (my != examplesGeneration || tags == null) return;
+            Examples.Children.Clear();
+            foreach (var tag in tags)
+            {
+                var t = tag;
+                var item = WordItem.From(t);
+                var b = new Button { Style = (Style)FindResource("LinkButton"), Content = item.Main, FontSize = 16, Margin = new Thickness(0, 0, 14, 2) };
+                b.FontFamily = Ui.JpFont;
+                b.ToolTip = (string.IsNullOrEmpty(item.Reading) ? "" : item.Reading + " - ") + item.Meaning;
+                b.Click += (s, e) => OpenWord(t, item.Main);
+                Examples.Children.Add(b);
+            }
+        }
+
+        public void FocusBox() { Box.Focus(); Box.SelectAll(); }
+
+        // ---- modes -------------------------------------------------------------------------------------------------
+        // Checked / Unchecked are what UI Automation and the keyboard raise, Click comes with every mouse click (also on the
+        // mode that is already on: that click switches it off). A mouse click that switches a mode ON raises Checked and,
+        // a moment later in the same click, Click: that Click is ignored.
+        void Mode_Changed(object sender, RoutedEventArgs e)
+        {
+            if (keyboard == null) return;   // while the page is being built
+            var m = ModeBrush.IsChecked == true ? Mode.Handwriting : ModeRadicals.IsChecked == true ? Mode.Radicals : ModeKeyboard.IsChecked == true ? Mode.Keyboard : Mode.None;
+            if (m != Mode.None && m != mode) lastModeTick = Environment.TickCount;
+            mode = m;
+            ShowPanel();
+            if (searchPending && mode != Mode.Handwriting && mode != Mode.Radicals) { searchPending = false; debounce.Stop(); RunSearch(); }   // DONE: now the results and the card
+        }
+
+        void Mode_Click(object sender, RoutedEventArgs e)
+        {
+            if (Environment.TickCount - lastModeTick < 50) return;   // the Click of the click that just switched this mode on
+            ((RadioButton)sender).IsChecked = false;                  // pressed again: switch it off
+        }
+
+        void ShowPanel()
+        {
+            PanelBorder.Visibility = mode == Mode.Keyboard ? Visibility.Visible : Visibility.Collapsed;
+            RadicalHost.Visibility = mode == Mode.Radicals ? Visibility.Visible : Visibility.Collapsed;
+            HandwritingHost.Visibility = mode == Mode.Handwriting ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        /// <summary>Switch every mode off (the box is typed into with the keyboard as it is).</summary>
+        public void CloseModes()
+        {
+            candLength = 0;
+            ModeKeyboard.IsChecked = false;
+            ModeRadicals.IsChecked = false;
+            ModeBrush.IsChecked = false;
+            Box.Focus();
+            Box.Select(Box.Text.Length, 0);   // the candidate that was selected is accepted: the caret goes after it
+        }
+
+        /// <summary>For automated tests (--pick 0,1): choose candidates of the handwriting panel by number, one every second.</summary>
+        public void TestPick(int[] indexes)
+        {
+            var queue = new System.Collections.Generic.Queue<int>(indexes);
+            var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.2) };
+            t.Tick += (s, e) =>
+            {
+                if (queue.Count == 0) { t.Stop(); return; }
+                string c = writing.Candidates;
+                if (c.Length == 0) return;   // the candidates are not there yet
+                int i = queue.Dequeue();
+                if (i < c.Length) InsertCandidate(c[i].ToString());
+            };
+            t.Start();
+        }
+
+        /// <summary>For automated tests (--handwrite 学): open the handwriting mode and write this kanji on the pad.</summary>
+        public void TestHandwrite(char c)
+        {
+            ModeBrush.IsChecked = true;
+            var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(7) };   // the templates are built first (a few seconds)
+            t.Tick += (s, e) => { t.Stop(); writing.TestDraw(c); };
+            t.Start();
+        }
+
+        /// <summary>Switch to the radicals (puzzle) mode.</summary>
+        public void ShowRadicals(string[] preselect = null)
+        {
+            ModeRadicals.IsChecked = true;
+            if (preselect != null) picker.Preselect(preselect);
+        }
+
+        // in the keyboard mode the real keyboard types romaji and kana come out
+        bool KanaTyping { get { return mode == Mode.Keyboard; } }
+
+        // ---- typing -------------------------------------------------------------------------------------------------
+        /// <summary>Put text into the search box at the caret (the on-screen keyboard and the kanji of the radical search).</summary>
+        public void InsertRaw(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            if (!Box.IsKeyboardFocusWithin) { Box.Focus(); Box.Select(Box.Text.Length, 0); }
+            int start = Box.SelectionStart;
+            Box.Text = Box.Text.Remove(start, Box.SelectionLength).Insert(start, text);
+            Box.CaretIndex = start + text.Length;
+        }
+
+        // ---- a candidate (handwriting, radicals) goes into the box SELECTED; another candidate replaces it, until the user clicks into the box
+        int candStart = -1, candLength;
+        string candText = "";
+        bool searchPending;
+
+        void InsertCandidate(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            string t = Box.Text;
+            int start;
+            if (candLength > 0 && candStart >= 0 && candStart + candLength <= t.Length && t.Substring(candStart, candLength) == candText)
+            {
+                t = t.Remove(candStart, candLength);          // the previous candidate is replaced
+                start = candStart;
+            }
+            else
+            {
+                start = Math.Min(Box.SelectionStart, t.Length);
+                t = t.Remove(start, Math.Min(Box.SelectionLength, t.Length - start));
+            }
+            Box.Text = t.Insert(start, text);
+            Box.Select(start, text.Length);
+            candStart = start; candLength = text.Length; candText = text;
+        }
+
+        void BackspaceKey()
+        {
+            if (!Box.IsKeyboardFocusWithin) { Box.Focus(); Box.Select(Box.Text.Length, 0); }
+            int start = Box.SelectionStart, len = Box.SelectionLength;
+            if (len == 0) { if (start == 0) return; start--; len = 1; }
+            Box.Text = Box.Text.Remove(start, len);
+            Box.CaretIndex = start;
+        }
+
+        // the dakuten / handakuten / small keys change the kana before the caret (か -> が)
+        void ModifyLast(string kind)
+        {
+            if (!Box.IsKeyboardFocusWithin) { Box.Focus(); Box.Select(Box.Text.Length, 0); }
+            int caret = Box.SelectionStart;
+            if (caret == 0) return;
+            char c = Box.Text[caret - 1], n = Kana.Modify(c, kind);
+            if (n == c) return;
+            Box.Text = Box.Text.Remove(caret - 1, 1).Insert(caret - 1, n.ToString());
+            Box.CaretIndex = caret;
+        }
+
+        /// <summary>In the kana layouts the real keyboard types romaji and kana come out (ka -> か). An unfinished syllable
+        /// (k, sh, n) stays as letters until it is complete.</summary>
+        void Box_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            if (!KanaTyping) return;
+            if (e.Text.Length != 1 || !Kana.IsRomajiChar(e.Text[0])) return;
+            e.Handled = true;
+            TypeRomaji(e.Text[0]);
+        }
+
+        void TypeRomaji(char ch)
+        {
+            string t = Box.Text;
+            int start = Box.SelectionStart, len = Box.SelectionLength;
+            if (len > 0) t = t.Remove(start, len);
+            // unfinished romaji right before the caret continues with this letter
+            int p = start;
+            for (int l = Math.Min(3, start); l >= 1; l--)
+            {
+                string tail = t.Substring(start - l, l);
+                if (tail.All(c => c < 128 && char.IsLetter(c)) && Kana.IsPending(tail.ToLowerInvariant())) { p = start - l; break; }
+            }
+            // "nn" gives ん, but the second n may still start the next syllable: konnichiwa -> こんにちわ, onna -> おんな
+            string run = t.Substring(p, start - p) + ch;
+            char lc = char.ToLowerInvariant(ch);
+            if (p == start && nnCaret == start && start > 0 && (t[start - 1] == 'ん' || t[start - 1] == 'ン') && ("aiueoy".IndexOf(lc) >= 0))
+                run = "n" + ch;
+            nnCaret = -1;
+            string rest, kana = Kana.Feed(run, keyboard.Layout == "kata", out rest);
+            if (run.ToLowerInvariant() == "nn") nnCaret = p + kana.Length;
+            Box.Text = t.Substring(0, p) + kana + rest + t.Substring(start);
+            Box.CaretIndex = p + kana.Length + rest.Length;
+        }
+
+        int nnCaret = -1;   // caret position right after a ん that came from "nn"
+
+        // a lone "n" before the caret is waiting for a vowel: Enter / Space settle it as ん
+        void CommitPendingN()
+        {
+            int caret = Box.SelectionStart;
+            if (Box.SelectionLength == 0 && caret > 0 && (Box.Text[caret - 1] == 'n' || Box.Text[caret - 1] == 'N'))
+            {
+                string kana = keyboard.Layout == "kata" ? "ン" : "ん";
+                Box.Text = Box.Text.Remove(caret - 1, 1).Insert(caret - 1, kana);
+                Box.CaretIndex = caret;
+            }
+        }
+
+        /// <summary>A key was pressed while the focus was somewhere else on the search page (the result list, the card ...):
+        /// it goes into the search box. When the box was not in use, what was typed there before is replaced: it is a new search.</summary>
+        public void TypeFromAnywhere(string text)
+        {
+            if (!Box.IsKeyboardFocusWithin) { Box.Focus(); if (Box.Text.Length > 0) Box.SelectAll(); }
+            if (KanaTyping && text.Length == 1 && Kana.IsRomajiChar(text[0])) TypeRomaji(text[0]);
+            else InsertRaw(text);
+        }
+
+        public void BackspaceFromAnywhere() { BackspaceKey(); }
+
+        /// <summary>For automated tests (--mode-clicks keyboard,keyboard): press the mode buttons like a mouse click does
+        /// (the real OnClick of the button), one every 2 s, so that "pressed again switches it off" can be tested.</summary>
+        public void TestModeClicks(string[] names)
+        {
+            var queue = new System.Collections.Generic.Queue<string>(names);
+            var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(2000) };
+            t.Tick += (s, e) =>
+            {
+                if (queue.Count == 0) { t.Stop(); return; }
+                var rb = queue.Dequeue() == "radicals" ? ModeRadicals : ModeKeyboard;
+                typeof(System.Windows.Controls.Primitives.ButtonBase).GetMethod("OnClick", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Invoke(rb, null);
+            };
+            t.Start();
+        }
+
+        /// <summary>For automated tests (--layout hira|kata|off): switch the keyboard mode on with that layout (or off), without saving.</summary>
+        public void TestLayout(string layout)
+        {
+            if (layout == "hira" || layout == "kata") { keyboard.Layout = layout; ModeKeyboard.IsChecked = true; }
+            else CloseModes();
+        }
+
+        public void SetQuery(string text)
+        {
+            Box.Text = text ?? "";
+            Box.CaretIndex = Box.Text.Length;
+            debounce.Stop();
+            RunSearch();
+            Box.Focus();
+        }
+
+        /// <summary>Search for <paramref name="queryText"/> and open exactly this entry (used by the word previews).</summary>
+        public void OpenWord(WordTag tag, string queryText)
+        {
+            pendingSelectId = tag.WordId;
+            SetQuery(queryText);
+        }
+
+        /// <summary>The "Random word" button: a random entry of the whole dictionary, found in the list like any other word.</summary>
+        static readonly Random rngMix = new Random();
+
+        // ---- the empty page: the index of all words (a-i-u-e-o), with a strip of kana to jump -----------------------------
+        readonly VirtualWordList indexList = new VirtualWordList();
+
+        /// <summary>All the hiragana (a-i-u-e-o, ka ... n) in one small vertical line to the right of the list: a tap jumps to the words that start with it
+        /// (が ざ だ ば ぱ follow か さ た は in the order of the list). It shrinks when the window is low.</summary>
+        void BuildAlphaBar()
+        {
+            foreach (char c in "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん")
+            {
+                string kana = c.ToString();
+                var b = new Button { Style = (Style)FindResource("IconButton"), Content = kana, Width = 22, Height = 16, FontFamily = Ui.JpFont, FontSize = 11.5, Padding = new Thickness(0), ToolTip = "Jump to " + kana };
+                System.Windows.Automation.AutomationProperties.SetName(b, "Jump to " + kana);
+                b.Click += (sn, ev) => JumpTo(kana);
+                AlphaStack.Children.Add(b);
+            }
+        }
+
+        /// <summary>For the render test: show the index of all words now.</summary>
+        public void ShowIndexNow() { ShowIndex(); }
+
+        void JumpTo(string kana)
+        {
+            if (!WordIndex.Ready) return;
+            int idx = kana == "あ" ? 0 : WordIndex.FirstAtOrAfter(kana);
+            var sv = FindScroll(List);
+            if (sv != null) sv.ScrollToVerticalOffset(idx);   // the list scrolls by whole items
+        }
+
+        static ScrollViewer FindScroll(DependencyObject d)
+        {
+            if (d == null) return null;
+            for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(d); i++)
+            {
+                var c = System.Windows.Media.VisualTreeHelper.GetChild(d, i);
+                var sv = c as ScrollViewer;
+                if (sv != null) return sv;
+                var r = FindScroll(c);
+                if (r != null) return r;
+            }
+            return null;
+        }
+
+        void ShowIndex()
+        {
+            Hint.Visibility = Visibility.Collapsed;
+            Detail.Clear();
+            if (WordIndex.Ready)
+            {
+                NothingFound.Visibility = Visibility.Collapsed;
+                if (!ReferenceEquals(List.ItemsSource, indexList)) List.ItemsSource = indexList;
+                AlphaBar.Visibility = Visibility.Visible;
+                StatusBar.Visibility = Visibility.Visible;
+                StatusText.Text = WordIndex.Count.ToString("N0") + " words, in the order of their reading";
+                return;
+            }
+            items.Clear();
+            AlphaBar.Visibility = Visibility.Collapsed;
+            StatusBar.Visibility = Visibility.Collapsed;
+            NothingFound.Text = "Making the index of all words (only the first time, about a minute)…";
+            NothingFound.Visibility = Visibility.Visible;
+            var wait = WordIndex.EnsureLoaded();
+            wait.ContinueWith(t => Dispatcher.BeginInvoke(new Action(() => { if (Box.Text.Trim().Length == 0 && WordIndex.Ready) ShowIndex(); })));
+        }
+
+        /// <summary>The random button of the search box.</summary>
+        void RandomBtn_Click(object sender, RoutedEventArgs e) { OpenRandom(); }
+
+        public async void OpenRandom()
+        {
+            WordTag tag = null;
+            bool common = Store.Settings.RandomCommon && rngMix.NextDouble() < 0.67, skipKatakana = Store.Settings.RandomSkipKatakana;   // mostly common words, now and then any word
+            try { tag = await Task.Run(() => Engine.RandomWord(common, skipKatakana)); }
+            catch (Exception ex) { App.Log(ex); }
+            if (tag == null) return;
+            string text = WordItem.From(tag).Main;
+            if (string.IsNullOrEmpty(text)) return;
+            OpenWord(tag, text);
+        }
+
+        public void RefreshCard() { var tag = Detail.Current; if (tag != null) Detail.Show(tag); }
+
+        /// <summary>Re-runs the current search (e.g. after the language options changed).</summary>
+        public void Refresh() { if (Box.Text.Trim().Length > 0) RunSearch(); }
+
+        void Box_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            Placeholder.Visibility = Box.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+            ClearBtn.Visibility = Box.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
+            debounce.Stop();
+            if (mode == Mode.Handwriting || mode == Mode.Radicals) { searchPending = true; return; }   // no search and no card until DONE
+            debounce.Start();
+        }
+
+        async void RunSearch()
+        {
+            string q = Box.Text.Trim();
+            int my = ++generation;
+            limit = FirstLimit;
+            loadingMore = false;
+            if (q.Length == 0)
+            {
+                items.Clear();
+                Detail.Clear();
+                StatusBar.Visibility = Visibility.Collapsed;
+                ShowIndex();
+                NothingFound.Visibility = Visibility.Collapsed;
+                pendingSelectId = 0;
+                restoring = false;
+                navPos = nav.Count;   // the empty page: "back" goes to the last place
+                UpdateNav();
+                return;
+            }
+            Hint.Visibility = Visibility.Collapsed;
+            if (!ReferenceEquals(List.ItemsSource, items)) { List.ItemsSource = items; AlphaBar.Visibility = Visibility.Collapsed; }
+            NothingFound.Text = "Nothing found.";
+            SearchOutcome r = null;
+            try { r = await Task.Run(() => Engine.Search(q, FirstLimit)); }
+            catch (Exception ex) { App.Log(ex); }
+            if (my != generation) return;   // a newer search is already running
+            if (r == null) { restoring = false; return; }
+
+            currentQuery = q;
+            truncated = r.Truncated;
+            items.Clear();
+            foreach (var t in r.Exact.Concat(r.Partial)) items.Add(WordItem.From(t));
+            NothingFound.Visibility = items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            UpdateStatus();
+            if (items.Count == 0) { Detail.Clear(); pendingSelectId = 0; restoring = false; UpdateNav(); return; }
+
+            var wanted = pendingSelectId > 0 ? items.FirstOrDefault(i => i.Tag.WordId == pendingSelectId) : null;
+            pendingSelectId = 0;
+            if (wanted != null) { List.SelectedItem = wanted; List.ScrollIntoView(wanted); }   // chosen by the user: counts for the history
+            else { auto = true; List.SelectedIndex = 0; auto = false; List.ScrollIntoView(items[0]); }   // best match shown right away
+            restoring = false;
+        }
+
+        // ---- back / forward ------------------------------------------------------------------------------------------
+        void Record(WordTag tag, bool typed)
+        {
+            string q = currentQuery ?? "";
+            if (navPos < nav.Count)
+            {
+                var cur = nav[navPos];
+                if (cur.Tag.WordId == tag.WordId && cur.Query == q) { if (!typed) cur.Auto = false; UpdateNav(); return; }
+                if (cur.Auto && typed) { cur.Query = q; cur.Tag = tag; nav.RemoveRange(navPos + 1, nav.Count - navPos - 1); UpdateNav(); return; }   // typing on: the same place
+                nav.RemoveRange(navPos + 1, nav.Count - navPos - 1);   // a new place: what was "forward" is gone
+            }
+            nav.Add(new NavEntry { Query = q, Tag = tag, Auto = typed });
+            if (nav.Count > 100) nav.RemoveAt(0);
+            navPos = nav.Count - 1;
+            UpdateNav();
+        }
+
+        void UpdateNav() { Detail.SetNav(navPos > 0, navPos < nav.Count - 1); }
+
+        void Go(int i)
+        {
+            if (i < 0 || i >= nav.Count) return;
+            CloseModes();
+            navPos = i;
+            var e = nav[i];
+            restoring = true;
+            UpdateNav();
+            pendingSelectId = e.Tag.WordId;
+            SetQuery(e.Query);   // the same list and the same card as then
+        }
+
+        public void GoBack() { Go(navPos - 1); }
+        public void GoForward() { Go(navPos + 1); }
+
+        // ---- more results while scrolling --------------------------------------------------------------------------
+        void List_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            if (e.VerticalChange == 0) return;
+            if (!truncated || loadingMore || limit >= MaxLimit) return;
+            // the list scrolls by whole items: offsets are item numbers
+            if (e.VerticalOffset + e.ViewportHeight >= e.ExtentHeight - 5) LoadMore();
+        }
+
+        async void LoadMore()
+        {
+            loadingMore = true;
+            int my = generation;
+            string q = currentQuery;
+            int newLimit = Math.Min(MaxLimit, limit * 4);
+            StatusText.Text = items.Count + " results - loading more…";
+            SearchOutcome r = null;
+            try { r = await Task.Run(() => Engine.Search(q, newLimit)); }
+            catch (Exception ex) { App.Log(ex); }
+            if (my != generation || r == null) { loadingMore = false; return; }
+
+            limit = newLimit;
+            truncated = r.Truncated;
+            var all = r.Exact.Concat(r.Partial).ToList();
+            bool samePrefix = all.Count >= items.Count;
+            for (int i = 0; samePrefix && i < items.Count; i++) if (items[i].Tag.WordId != all[i].WordId) samePrefix = false;
+            if (samePrefix)
+                for (int i = items.Count; i < all.Count; i++) items.Add(WordItem.From(all[i]));   // just append the tail
+            else
+            {
+                var selected = List.SelectedItem as WordItem;
+                int keep = selected == null ? -1 : selected.Tag.WordId;
+                auto = true;
+                items.Clear();
+                foreach (var t in all) items.Add(WordItem.From(t));
+                var again = keep < 0 ? null : items.FirstOrDefault(i => i.Tag.WordId == keep);
+                if (again != null) List.SelectedItem = again;
+                auto = false;
+            }
+            loadingMore = false;
+            UpdateStatus();
+        }
+
+        void UpdateStatus()
+        {
+            StatusBar.Visibility = items.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+            if (items.Count == 0) return;
+            if (!truncated) StatusText.Text = items.Count + (items.Count == 1 ? " result" : " results");
+            else if (limit >= MaxLimit) StatusText.Text = "First " + items.Count + " results - type more to narrow it down";
+            else StatusText.Text = items.Count + "+ results - more load as you scroll";
+        }
+
+        void List_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var it = List.SelectedItem as WordItem;
+            if (it == null) return;
+            Detail.Show(it.Tag);
+            if (restoring) return;   // back / forward: not a new place, already in the history
+            Record(it.Tag, auto);
+            if (!auto) Store.AddHistory(it.Tag);
+        }
+
+        void Clear_Click(object sender, RoutedEventArgs e) { Box.Text = ""; Box.Focus(); }
+
+        void Box_KeyDown(object sender, KeyEventArgs e)
+        {
+            if ((e.Key == Key.Enter || e.Key == Key.Space) && KanaTyping) CommitPendingN();
+            candLength = 0;   // typing ends the replacing of the candidate
+            if (e.Key == Key.Escape) { Box.Text = ""; e.Handled = true; }
+            else if (e.Key == Key.Down && items.Count > 0)
+            {
+                int next = Math.Min(items.Count - 1, Math.Max(0, List.SelectedIndex + 1));
+                List.SelectedIndex = next;
+                List.ScrollIntoView(items[next]);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Up && items.Count > 0)
+            {
+                int prev = Math.Max(0, List.SelectedIndex - 1);
+                List.SelectedIndex = prev;
+                List.ScrollIntoView(items[prev]);
+                e.Handled = true;
+            }
+        }
+
+        void List_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape) { FocusBox(); e.Handled = true; }
+        }
+    }
+}
